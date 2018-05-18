@@ -21,7 +21,7 @@ else {
   // Compile webpack content dynamically and serve it from express.
   router.use(webpackDevMiddleware(compiler, {
     publicPath: webpackConfig.output.publicPath,
-    stats: { colors: true },
+    stats: 'minimal',
   }));
 
   // Use hot module loading.
