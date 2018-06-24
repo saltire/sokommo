@@ -11,7 +11,6 @@ const common = require('./webpack.common.js');
 
 module.exports = merge(common, {
   mode: 'production',
-  // devtool: 'source-map',
   plugins: [
     new CleanPlugin(['dist']),
     new MiniCssExtractPlugin({
@@ -19,8 +18,6 @@ module.exports = merge(common, {
       chunkFilename: '[name].[contenthash].css',
     }),
     new OptimizeCssAssetsPlugin(),
-    new UglifyJSPlugin({
-      // sourceMap: true,
-    }),
+    new UglifyJSPlugin(),
   ],
 });
