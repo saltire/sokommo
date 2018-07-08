@@ -2,8 +2,11 @@
   "name": "react-node-boilerplate",
   "version": "0.0.0",
   "description": "",
-  "main": "server/index.js",
   "license": "ISC",
+  "engines": {
+    "node": "10"
+  },
+  "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
     "watch": "nodemon -r dotenv/config server/index.js",
