@@ -1,20 +1,19 @@
-'use strict';
-
 const HtmlPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
 
 
 module.exports = {
   entry: {
-    index: './app/index.jsx',
+    index: path.resolve(__dirname, 'app/index.jsx'),
   },
   output: {
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
     filename: '[name].[hash].js',
     chunkFilename: '[name].[chunkhash].js',
     hashDigestLength: 8,
-    path: path.resolve(__dirname, 'dist'),
-    publicPath: '/',
   },
   module: {
     rules: [
@@ -36,16 +35,17 @@ module.exports = {
       },
     ],
   },
-  optimization: {
-    splitChunks: { chunks: 'all' },
-  },
   resolve: {
     extensions: ['.js', '.jsx'],
   },
+  optimization: {
+    minimizer: [new TerserPlugin()],
+    splitChunks: { chunks: 'all' },
+  },
   plugins: [
     new HtmlPlugin({
-      template: './app/index.ejs',
-      favicon: './app/static/favicon.ico',
+      template: path.resolve(__dirname, 'app/index.ejs'),
+      favicon: path.resolve(__dirname, 'app/static/favicon.ico'),
     }),
   ],
 };

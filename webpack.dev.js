@@ -1,7 +1,6 @@
-'use strict';
-
 const merge = require('webpack-merge');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const path = require('path');
 const { HotModuleReplacementPlugin } = require('webpack');
 
 const common = require('./webpack.common.js');
@@ -12,7 +11,7 @@ module.exports = merge(common, {
   entry: {
     index: [
       'webpack-hot-middleware/client',
-      './app/index.jsx',
+      path.resolve(__dirname, 'app/index.jsx'),
     ],
   },
   devtool: 'eval-source-map',

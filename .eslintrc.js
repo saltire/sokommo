@@ -1,8 +1,5 @@
 module.exports = {
   extends: 'airbnb',
-  parserOptions: {
-    sourceType: 'script',
-  },
   rules: {
     'brace-style': [2, 'stroustrup'],
     'function-paren-newline': 0,
