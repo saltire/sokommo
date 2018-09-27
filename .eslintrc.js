@@ -3,7 +3,8 @@ module.exports = {
   rules: {
     'brace-style': [2, 'stroustrup'],
     'function-paren-newline': 0,
-    'jsx-a11y/label-has-for': [2, { required: { some: ['nesting', 'id'] } }],
+    'jsx-a11y/label-has-for': 0,
+    'jsx-a11y/label-has-associated-control': [2, {}],
     'jsx-quotes': [2, 'prefer-single'],
     'no-console': 0,
     'no-multi-assign': 0,

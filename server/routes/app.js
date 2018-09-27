@@ -9,19 +9,20 @@ const webpackHotMiddleware = require('webpack-hot-middleware');
 const webpackConfig = require('../../webpack.dev.js');
 
 
+const appRoot = webpackConfig.output.publicPath;
+
 const router = module.exports = express.Router();
 
 if (process.env.NODE_ENV === 'production') {
   // Serve already-compiled webpack content from the dist folder.
-  router.use(webpackConfig.output.publicPath,
-    express.static(path.resolve(__dirname, '../../dist')));
+  router.use(appRoot, express.static(path.resolve(__dirname, '../../dist')));
 }
 else {
   const compiler = webpack(webpackConfig);
 
   // Compile webpack content dynamically and serve it from express.
   router.use(webpackDevMiddleware(compiler, {
-    publicPath: webpackConfig.output.publicPath,
+    publicPath: appRoot,
     stats: 'minimal',
   }));
 
