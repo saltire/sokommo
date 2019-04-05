@@ -9,7 +9,7 @@ const common = require('./webpack.common.js');
 module.exports = merge(common, {
   mode: 'production',
   plugins: [
-    new CleanPlugin(['dist']),
+    new CleanPlugin(),
     new MiniCssExtractPlugin({
       filename: '[name].[contenthash].css',
       chunkFilename: '[name].[contenthash].css',
