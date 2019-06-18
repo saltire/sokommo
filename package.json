@@ -4,7 +4,7 @@
   "description": "Starting point for a single-page React app running on a Node.js server",
   "license": "ISC",
   "engines": {
-    "node": "10"
+    "node": "12"
   },
   "main": "server/index.js",
   "scripts": {
@@ -16,38 +16,39 @@
     "lint": "eslint --ext .js,.jsx ."
   },
   "dependencies": {
-    "@babel/core": "^7.4.3",
-    "@babel/preset-env": "^7.4.3",
+    "@babel/core": "^7.4.5",
+    "@babel/preset-env": "^7.4.5",
     "@babel/preset-react": "^7.0.0",
-    "babel-loader": "^8.0.5",
-    "clean-webpack-plugin": "^2.0.1",
+    "babel-loader": "^8.0.6",
+    "clean-webpack-plugin": "^3.0.0",
     "css-hot-loader": "^1.4.4",
-    "css-loader": "^2.1.1",
-    "express": "^4.16.4",
-    "file-loader": "^3.0.1",
+    "css-loader": "^3.0.0",
+    "express": "^4.17.1",
+    "file-loader": "^4.0.0",
     "html-webpack-plugin": "^3.2.0",
-    "mini-css-extract-plugin": "^0.5.0",
+    "mini-css-extract-plugin": "^0.7.0",
     "morgan": "^1.9.1",
-    "node-sass": "^4.11.0",
+    "node-sass": "^4.12.0",
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-hot-loader": "^4.8.2",
+    "react-hot-loader": "^4.11.1",
     "sass-loader": "^7.1.0",
-    "terser-webpack-plugin": "^1.2.3",
-    "webpack": "^4.29.6",
-    "webpack-cli": "^3.3.0",
-    "webpack-dev-middleware": "^3.6.2",
-    "webpack-hot-middleware": "^2.24.3",
+    "terser-webpack-plugin": "^1.3.0",
+    "webpack": "^4.34.0",
+    "webpack-cli": "^3.3.4",
+    "webpack-dev-middleware": "^3.7.0",
+    "webpack-hot-middleware": "^2.25.0",
     "webpack-merge": "^4.2.1"
   },
   "devDependencies": {
-    "dotenv": "^7.0.0",
+    "@hot-loader/react-dom": "^16.8.6",
+    "dotenv": "^8.0.0",
     "eslint": "^5.16.0",
     "eslint-config-airbnb": "^17.1.0",
-    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-import": "^2.17.3",
     "eslint-plugin-jsx-a11y": "^6.2.1",
-    "eslint-plugin-react": "^7.12.4",
-    "nodemon": "^1.18.10"
+    "eslint-plugin-react": "^7.13.0",
+    "nodemon": "^1.19.1"
   }
 }
