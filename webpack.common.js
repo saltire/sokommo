@@ -6,7 +6,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
   entry: {
-    index: path.resolve(__dirname, 'app/index.jsx'),
+    index: path.resolve(__dirname, 'client/index.jsx'),
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -44,8 +44,8 @@ module.exports = {
   },
   plugins: [
     new HtmlPlugin({
-      template: path.resolve(__dirname, 'app/index.ejs'),
-      favicon: path.resolve(__dirname, 'app/static/favicon.ico'),
+      template: path.resolve(__dirname, 'client/index.ejs'),
+      favicon: path.resolve(__dirname, 'client/static/favicon.ico'),
     }),
   ],
 };

@@ -11,7 +11,7 @@ module.exports = merge(common, {
   entry: {
     index: [
       'webpack-hot-middleware/client',
-      path.resolve(__dirname, 'app/index.jsx'),
+      path.resolve(__dirname, 'client/index.jsx'),
     ],
   },
   resolve: {
