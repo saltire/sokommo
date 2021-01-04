@@ -21,10 +21,7 @@ else {
   const compiler = webpack(webpackConfig);
 
   // Compile webpack content dynamically and serve it from express.
-  router.use(webpackDevMiddleware(compiler, {
-    publicPath: appRoot,
-    stats: 'minimal',
-  }));
+  router.use(webpackDevMiddleware(compiler));
 
   // Use hot module loading.
   router.use(webpackHotMiddleware(compiler));

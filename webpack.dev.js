@@ -27,4 +27,5 @@ module.exports = merge(common, {
       chunkFilename: '[name].css',
     }),
   ],
+  stats: 'minimal',
 });

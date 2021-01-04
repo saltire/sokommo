@@ -1,3 +1,4 @@
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const HtmlPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const path = require('path');
@@ -11,7 +12,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     publicPath: '/',
-    filename: '[name].[hash].js',
+    filename: '[name].[contenthash].js',
     chunkFilename: '[name].[chunkhash].js',
     hashDigestLength: 8,
   },
@@ -24,13 +25,13 @@ module.exports = {
       },
       {
         test: /\.s?css$/,
-        use: ['css-hot-loader', MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
       },
       {
-        test: /\.(jpe?g|gif|png|eot|svg|ttf|woff2?)$/,
+        test: /\.(jpe?g|gif|png|svg|eot|otf|ttf|woff2?)$/,
         use: [{
           loader: 'file-loader',
-          options: { name: '[name].[hash:8].[ext]' },
+          options: { name: '[name].[contenthash:8].[ext]' },
         }],
       },
     ],
@@ -39,7 +40,10 @@ module.exports = {
     extensions: ['.js', '.jsx'],
   },
   optimization: {
-    minimizer: [new TerserPlugin()],
+    minimizer: [
+      new TerserPlugin(),
+      new CssMinimizerPlugin(),
+    ],
     splitChunks: { chunks: 'all' },
   },
   plugins: [
