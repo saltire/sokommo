@@ -1,6 +1,7 @@
-# React-Node boilerplate app
+# React-Node-TypeScript boilerplate app
 
-This is a starting point for a single-page React app running on a Node.js server.
+This is a starting point for a single-page React app running on a Node.js server,
+with TypeScript on both ends.
 
 Just clone the repo, edit the `name`, `description`, and other fields in `package.json` and
 `package-lock.json`, and build from there.

@@ -2,5 +2,5 @@ module.exports = {
   env: {
     browser: true,
   },
-  overrides: [{ files: '*.jsx' }],
+  overrides: [{ files: '*.tsx' }],
 };

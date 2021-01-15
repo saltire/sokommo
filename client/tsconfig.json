@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "lib": ["ES2020", "dom"],
+    "module": "commonjs",
+    "outDir": "../built",
+    "strict": true,
+    "target": "ES2015",
+    "types": []
+  }
+}
