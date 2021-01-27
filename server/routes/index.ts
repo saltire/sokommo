@@ -1,8 +1,10 @@
-import { Router } from 'express';
+import Router from 'express-promise-router';
 
 
 const router = Router();
 
-// API routes go here.
+router.get('/message', async (req, res) => {
+  res.json({ message: 'A message from the server!' });
+});
 
 export default router;

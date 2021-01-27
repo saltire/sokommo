@@ -8,7 +8,8 @@ Just clone the repo, edit the `name`, `description`, and other fields in `packag
 
 ## Features
 
-- A starter single-page React app with very basic layout and styles, and a favicon.
+- A starter single-page React app with very basic layout and styles, a favicon,
+  and an example asynchronous call to the server API.
 - An Express.js server with a basic logger and error handler, and a place to put API routes.
 - SCSS for styling.
 - Webpack config files for development and production.
@@ -25,6 +26,7 @@ Just clone the repo, edit the `name`, `description`, and other fields in `packag
   The front end app will reload, and the back end server will restart, when you make changes.
   View the app at `http://localhost:8080`,
   or change the port with the `DEV_SERVER_PORT` environment variable.
+  API calls are proxied to the server port (set with the `PORT` environment variable).
 - `npm run build`: Build for production.
   The front end will go into the `/dist` folder, and the back end into `/built`.
 - `npm start`: Start the production server. You will need to run `npm run build` first.

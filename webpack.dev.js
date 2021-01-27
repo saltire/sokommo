@@ -1,9 +1,12 @@
+const dotenv = require('dotenv');
 const { merge } = require('webpack-merge');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { HotModuleReplacementPlugin } = require('webpack');
 
 const common = require('./webpack.common.js');
 
+
+dotenv.config();
 
 module.exports = merge(common, {
   mode: 'development',
