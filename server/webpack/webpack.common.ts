@@ -1,20 +1,19 @@
-const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const HtmlPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const path = require('path');
-const TerserPlugin = require('terser-webpack-plugin');
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
+import HtmlPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import path from 'path';
+import TerserPlugin from 'terser-webpack-plugin';
+import { Configuration } from 'webpack';
 
 
-module.exports = {
-  entry: {
-    index: path.resolve(__dirname, 'client/index.tsx'),
-  },
+const config: Configuration = {
+  entry: path.resolve(__dirname, '../../client/index.tsx'),
   output: {
     filename: '[name].[contenthash].js',
     chunkFilename: '[name].[chunkhash].js',
     assetModuleFilename: '[name].[contenthash][ext]',
     hashDigestLength: 8,
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, '../../dist'),
     publicPath: '/',
     clean: true,
   },
@@ -36,7 +35,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.js', '.jsx', '.ts', '.tsx'],
+    extensions: ['.ts', '.tsx'],
   },
   optimization: {
     minimizer: [
@@ -47,8 +46,9 @@ module.exports = {
   },
   plugins: [
     new HtmlPlugin({
-      template: path.resolve(__dirname, 'client/index.ejs'),
-      favicon: path.resolve(__dirname, 'client/static/favicon.ico'),
+      template: path.resolve(__dirname, '../../client/index.ejs'),
+      favicon: path.resolve(__dirname, '../../client/static/favicon.ico'),
     }),
   ],
 };
+export default config;

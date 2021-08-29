@@ -1,10 +1,12 @@
 import Router from 'express-promise-router';
 
+import api from './api';
+import client from './client';
+
 
 const router = Router();
 
-router.get('/message', async (req, res) => {
-  res.json({ message: 'A message from the server!' });
-});
+router.use('/api', api);
+router.use('/', client);
 
 export default router;

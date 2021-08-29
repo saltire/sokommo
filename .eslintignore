@@ -1,2 +1,4 @@
-built
-dist
+/built/
+/dist/
+
+.eslintrc.js

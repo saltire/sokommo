@@ -3,10 +3,10 @@
     "esModuleInterop": true,
     "jsx": "preserve",
     "lib": ["ES2020", "dom"],
-    "module": "commonjs",
-    "outDir": "../built",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "outDir": "../built/client",
     "strict": true,
-    "target": "ES2015",
-    "types": []
+    "target": "ES2015"
   }
 }
