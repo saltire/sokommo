@@ -4,7 +4,12 @@
     ["@babel/preset-react", { "runtime": "automatic" }],
     ["@babel/preset-typescript"]
   ],
-  "plugins": [
-    "react-hot-loader/babel"
-  ]
+  "plugins": [],
+  "env": {
+    "development": {
+      "plugins": [
+        "react-refresh/babel"
+      ]
+    }
+  }
 }

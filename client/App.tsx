@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { hot } from 'react-hot-loader/root';
 import axios from 'axios';
 
 import './App.scss';
@@ -9,7 +8,7 @@ interface AppProps {
   headerText: string,
 }
 
-function App({ headerText }: AppProps) {
+export default function App({ headerText }: AppProps) {
   const [message, setMessage] = useState('Loading...');
 
   useEffect(() => {
@@ -31,5 +30,3 @@ function App({ headerText }: AppProps) {
     </div>
   );
 }
-
-export default hot(App);
