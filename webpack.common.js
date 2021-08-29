@@ -10,11 +10,13 @@ module.exports = {
     index: path.resolve(__dirname, 'client/index.tsx'),
   },
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    publicPath: '/',
     filename: '[name].[contenthash].js',
     chunkFilename: '[name].[chunkhash].js',
+    assetModuleFilename: '[name].[contenthash][ext]',
     hashDigestLength: 8,
+    path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
+    clean: true,
   },
   module: {
     rules: [
@@ -29,10 +31,7 @@ module.exports = {
       },
       {
         test: /\.(jpe?g|gif|png|svg|eot|otf|ttf|woff2?)$/,
-        use: [{
-          loader: 'file-loader',
-          options: { name: '[name].[contenthash:8].[ext]' },
-        }],
+        type: 'asset/resource',
       },
     ],
   },
