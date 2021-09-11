@@ -35,7 +35,7 @@ const config: Configuration = {
     ],
   },
   resolve: {
-    extensions: ['.ts', '.tsx'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
   optimization: {
     minimizer: [
