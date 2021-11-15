@@ -1,6 +1,6 @@
-node_modules
+/node_modules
+/built
+/dist
 npm-debug.log
-built
-dist
 .env
 .vscode

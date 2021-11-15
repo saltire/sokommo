@@ -6,6 +6,7 @@
     "module": "ES2020",
     "moduleResolution": "node",
     "outDir": "../built/client",
+    "skipLibCheck": true,
     "strict": true,
     "target": "ES2015"
   }
