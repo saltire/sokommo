@@ -30,10 +30,17 @@ server.listen(port, () => console.log('Listening on port', port));
 
 const io = new Server(server);
 
-let rows = initializeRows(20, 20, 0.6);
+const width = 20;
+const height = 20;
+const density = 0.4;
+let rows = initializeRows(width, height, density);
 
 setInterval(() => {
-  io.emit('rows', rows);
+  // io.emit('rows', rows);
+
+  io.emit('cells', rows
+    .flatMap((row, y) => row.map((cell, x) => cell && [x, y]))
+    .filter(Boolean));
 
   rows = getNewRows(rows);
 }, 250);
@@ -43,6 +50,6 @@ io.on('connection', socket => {
 
   socket.on('reset', () => {
     console.log('reset');
-    rows = initializeRows(20, 20, 0.6);
+    rows = initializeRows(width, height, density);
   });
 });

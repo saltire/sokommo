@@ -56,6 +56,36 @@ export const createGrid = () => {
   return rows;
 };
 
+type Coord = [number, number];
+
+export const updateCells = (cells: Coord[]) => {
+  const transition = d3.transition()
+    .duration(100);
+
+  grid.selectAll<SVGSVGElement, Coord>('.cell')
+    .data(cells, d => d.join(','))
+    .join(
+      enter => enter
+        .append('rect')
+        .attr('class', 'cell')
+        .attr('x', d => (d[0] * size) + 1)
+        .attr('y', d => (d[1] * size) + 1)
+        .attr('width', size)
+        .attr('height', size)
+        .style('fill', '#dc2f02')
+        .style('opacity', 0)
+        .call(x => x.transition(transition)
+          .style('opacity', 1)),
+      update => update
+        .attr('x', d => (d[0] * size) + 1)
+        .attr('y', d => (d[1] * size) + 1),
+      exit => exit
+        .call(x => x.transition(transition)
+          .style('opacity', 0)
+          .remove()),
+    );
+};
+
 export const updateGrid = (newRows: Cell[][]) => {
   row.data(newRows);
 

@@ -5,7 +5,7 @@ export const initializeRows = (width: number, height: number, density: number) =
     rows[y] = [];
 
     for (let x = 0; x < width; x += 1) {
-      rows[y][x] = Math.random() > density;
+      rows[y][x] = Math.random() < density;
     }
   }
 
