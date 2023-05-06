@@ -31,6 +31,8 @@
     "mini-css-extract-plugin": "^2.7.0",
     "morgan": "^1.10.0",
     "sass-loader": "^13.2.0",
+    "socket.io": "^4.6.1",
+    "socket.io-client": "^4.6.1",
     "terser-webpack-plugin": "^5.3.6",
     "webpack": "^5.75.0",
     "webpack-dev-middleware": "^6.0.0",
