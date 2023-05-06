@@ -1,9 +1,6 @@
 {
-  "name": "webpack-node-typescript-boilerplate",
-  "version": "0.0.0",
-  "description": "Starting point for a vanilla TypeScript app running on a Node.js server",
-  "repository": "https://github.com/saltire/webpack-node-typescript-boilerplate",
-  "license": "ISC",
+  "name": "sokommo",
+  "private": true,
   "engines": {
     "node": "18"
   },
@@ -24,10 +21,10 @@
     "lint": "npm run eslint && npm run stylelint"
   },
   "dependencies": {
-    "axios": "^1.2.0",
     "babel-loader": "^9.1.0",
     "css-loader": "^6.7.2",
     "css-minimizer-webpack-plugin": "^5.0.0",
+    "d3": "^7.8.4",
     "express": "^4.18.2",
     "express-promise-router": "^4.1.1",
     "html-webpack-plugin": "^5.5.0",
@@ -44,6 +41,7 @@
     "@babel/core": "^7.20.2",
     "@babel/preset-env": "^7.20.2",
     "@babel/preset-typescript": "^7.18.6",
+    "@types/d3": "^7.4.0",
     "@types/express": "^4.17.14",
     "@types/morgan": "^1.9.3",
     "@types/webpack-hot-middleware": "^2.25.6",
