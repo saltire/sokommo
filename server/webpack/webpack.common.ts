@@ -7,7 +7,7 @@ import { Configuration } from 'webpack';
 
 
 const config: Configuration = {
-  entry: path.resolve(__dirname, '../../client/index.tsx'),
+  entry: path.resolve(__dirname, '../../client/index.ts'),
   output: {
     filename: '[name].[contenthash].js',
     chunkFilename: '[name].[chunkhash].js',
@@ -20,7 +20,7 @@ const config: Configuration = {
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.ts$/,
         exclude: /node_modules/,
         use: 'babel-loader',
       },
@@ -35,7 +35,7 @@ const config: Configuration = {
     ],
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx'],
+    extensions: ['.ts', '.js'],
   },
   optimization: {
     minimizer: [
@@ -47,7 +47,6 @@ const config: Configuration = {
   plugins: [
     new HtmlPlugin({
       template: path.resolve(__dirname, '../../client/index.ejs'),
-      favicon: path.resolve(__dirname, '../../client/static/favicon.ico'),
     }),
   ],
 };

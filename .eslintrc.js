@@ -7,8 +7,8 @@ module.exports = {
     '@typescript-eslint',
   ],
   extends: [
-    'airbnb',
-    'airbnb-typescript',
+    'airbnb-base',
+    'airbnb-typescript/base',
   ],
   rules: {
     '@typescript-eslint/brace-style': [2, 'stroustrup'],
@@ -24,14 +24,5 @@ module.exports = {
     'no-nested-ternary': 0,
     'object-curly-newline': [2, { multiline: true, consistent: true }],
     radix: [2, 'as-needed'],
-    'react/function-component-definition': [2, { namedComponents: 'function-declaration' }],
-    'react/jsx-filename-extension': [2, { extensions: ['.tsx'] }],
-    'react/jsx-one-expression-per-line': 0,
-    'react/jsx-props-no-spreading': 0,
-    'react/prop-types': 0,
-    'react/react-in-jsx-scope': 0,
   },
-  overrides: [
-    { files: '*.ts' },
-  ],
 };
