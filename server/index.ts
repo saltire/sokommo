@@ -4,8 +4,8 @@ import morgan from 'morgan';
 import path from 'path';
 import { Server } from 'socket.io';
 
+import life from './io/life';
 import routes from './routes';
-import { initializeRows, getNewRows } from './life';
 
 
 const app = express();
@@ -30,26 +30,4 @@ server.listen(port, () => console.log('Listening on port', port));
 
 const io = new Server(server);
 
-const width = 20;
-const height = 20;
-const density = 0.4;
-let rows = initializeRows(width, height, density);
-
-setInterval(() => {
-  // io.emit('rows', rows);
-
-  io.emit('cells', rows
-    .flatMap((row, y) => row.map((cell, x) => cell && [x, y]))
-    .filter(Boolean));
-
-  rows = getNewRows(rows);
-}, 250);
-
-io.on('connection', socket => {
-  console.log('Got connection');
-
-  socket.on('reset', () => {
-    console.log('reset');
-    rows = initializeRows(width, height, density);
-  });
-});
+life(io);

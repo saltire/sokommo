@@ -1,10 +1,11 @@
 import * as d3 from 'd3';
+import { Socket } from 'socket.io-client';
 
 
 type Cell = {
   x: number,
   y: number,
-  alive: boolean,
+  // alive: boolean,
 };
 
 const size = 50;
@@ -13,9 +14,9 @@ const height = 20;
 
 let grid: d3.Selection<SVGSVGElement, any, HTMLElement, any>;
 let row: d3.Selection<SVGGElement, Cell[], SVGSVGElement, any>;
-let square: d3.Selection<SVGRectElement, Cell, SVGGElement, Cell[]>;
+// let square: d3.Selection<SVGRectElement, Cell, SVGGElement, Cell[]>;
 
-export const createGrid = () => {
+const createGrid = () => {
   const rows: Cell[][] = [];
 
   for (let y = 0; y < height; y += 1) {
@@ -25,7 +26,7 @@ export const createGrid = () => {
       rows[y].push({
         x: (x * size) + 1,
         y: (y * size) + 1,
-        alive: false,
+        // alive: false,
       });
     }
   }
@@ -41,7 +42,8 @@ export const createGrid = () => {
     .append('g')
     .attr('class', 'row');
 
-  square = row.selectAll('.square')
+  // square =
+  row.selectAll('.square')
     .data(d => d)
     .enter()
     .append('rect')
@@ -50,7 +52,8 @@ export const createGrid = () => {
     .attr('y', d => d.y)
     .attr('width', size)
     .attr('height', size)
-    .style('fill', d => (d.alive ? '#666' : '#fff'))
+    // .style('fill', d => (d.alive ? '#666' : '#fff'))
+    .style('fill', '#fff')
     .style('stroke', '#222');
 
   return rows;
@@ -58,7 +61,7 @@ export const createGrid = () => {
 
 type Coord = [number, number];
 
-export const updateCells = (cells: Coord[]) => {
+const updateCells = (cells: Coord[]) => {
   const transition = d3.transition()
     .duration(100);
 
@@ -86,11 +89,36 @@ export const updateCells = (cells: Coord[]) => {
     );
 };
 
-export const updateGrid = (newRows: Cell[][]) => {
-  row.data(newRows);
+// const updateGrid = (newRows: Cell[][]) => {
+//   row.data(newRows);
 
-  square
-    .data(d => d)
-    .join('.square')
-    .style('fill', d => (d.alive ? '#666' : '#fff'));
+//   square
+//     .data(d => d)
+//     .join('.square')
+//     .style('fill', d => (d.alive ? '#666' : '#fff'));
+// };
+
+const life = (socket: Socket) => {
+  createGrid();
+
+  // socket.on('rows', newRows => {
+  //   for (let y = 0; y < newRows.length; y += 1) {
+  //     for (let x = 0; x < newRows[y].length; x += 1) {
+  //       rows[y][x].alive = newRows[y][x];
+  //     }
+  //   }
+
+  //   updateGrid(rows);
+  // });
+
+  socket.on('cells', cells => {
+    updateCells(cells);
+  });
+
+  document.body.addEventListener('keyup', e => {
+    if (e.key === 'Enter') {
+      socket.emit('reset');
+    }
+  });
 };
+export default life;

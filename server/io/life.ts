@@ -1,4 +1,7 @@
-export const initializeRows = (width: number, height: number, density: number) => {
+import { Server } from 'socket.io';
+
+
+const initializeRows = (width: number, height: number, density: number) => {
   const rows: boolean[][] = [];
 
   for (let y = 0; y < height; y += 1) {
@@ -12,7 +15,7 @@ export const initializeRows = (width: number, height: number, density: number) =
   return rows;
 };
 
-export const getNewRows = (rows: boolean[][]) => {
+const getNewRows = (rows: boolean[][]) => {
   const newRows: boolean[][] = [];
 
   for (let y = 0; y < rows.length; y += 1) {
@@ -37,3 +40,31 @@ export const getNewRows = (rows: boolean[][]) => {
 
   return newRows;
 };
+
+const life = (io: Server) => {
+  const width = 20;
+  const height = 20;
+  const density = 0.4;
+  let rows = initializeRows(width, height, density);
+
+  setInterval(() => {
+    // io.emit('rows', rows);
+
+    io.emit('cells', rows
+      .flatMap((row, y) => row.map((cell, x) => cell && [x, y]))
+      .filter(Boolean));
+
+    rows = getNewRows(rows);
+  }, 250);
+
+  io.on('connection', socket => {
+    console.log('Got connection');
+
+    socket.on('reset', () => {
+      console.log('reset');
+      rows = initializeRows(width, height, density);
+    });
+  });
+};
+
+export default life;
