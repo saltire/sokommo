@@ -1,9 +1,11 @@
 import io from 'socket.io-client';
 
 import './index.scss';
-import life from './life';
+// import life from './life';
+import soko from './soko';
 
 
 const socket = io();
 
-life(socket);
+// life(socket);
+soko(socket);

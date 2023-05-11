@@ -4,8 +4,10 @@ import morgan from 'morgan';
 import path from 'path';
 import { Server } from 'socket.io';
 
-import life from './io/life';
 import routes from './routes';
+
+// import life from './io/life';
+import soko from './io/soko';
 
 
 const app = express();
@@ -30,4 +32,5 @@ server.listen(port, () => console.log('Listening on port', port));
 
 const io = new Server(server);
 
-life(io);
+// life(io);
+soko(io);
