@@ -21,7 +21,12 @@
     "lint": "npm run eslint && npm run stylelint"
   },
   "dependencies": {
+    "@colyseus/monitor": "^0.15.1",
+    "@colyseus/schema": "^2.0.9",
+    "@colyseus/tools": "^0.15.8",
     "babel-loader": "^9.1.0",
+    "colyseus": "^0.15.0",
+    "colyseus.js": "^0.15.8",
     "css-loader": "^6.7.2",
     "css-minimizer-webpack-plugin": "^5.0.0",
     "d3": "^7.8.4",
@@ -31,8 +36,6 @@
     "mini-css-extract-plugin": "^2.7.0",
     "morgan": "^1.10.0",
     "sass-loader": "^13.2.0",
-    "socket.io": "^4.6.1",
-    "socket.io-client": "^4.6.1",
     "terser-webpack-plugin": "^5.3.6",
     "webpack": "^5.75.0",
     "webpack-dev-middleware": "^6.0.0",

@@ -1,11 +1,11 @@
-import io from 'socket.io-client';
+import * as Colyseus from 'colyseus.js';
 
 import './index.scss';
-// import lifeClient from './io/life';
-import sokoClient from './io/soko';
+// import lifeClient from './colyseus/life';
+import sokoClient from './colyseus/soko';
 
 
-const socket = io();
+const client = new Colyseus.Client('ws://localhost:2567');
 
-// lifeClient(socket);
-sokoClient(socket);
+// lifeClient(client);
+sokoClient(client);

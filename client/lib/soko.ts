@@ -1,16 +1,11 @@
 import * as d3 from 'd3';
 
+import { Player } from '../../server/rooms/SokoRoom';
+
 
 type Cell = {
   x: number,
   y: number,
-};
-
-export type Player = {
-  id: string,
-  x: number,
-  y: number,
-  color: string,
 };
 
 const size = 50;
@@ -63,12 +58,12 @@ export const createGrid = () => {
   return rows;
 };
 
-export const updatePlayers = (players: { [id: string]: Player }) => {
+export const updatePlayers = (players: Player[]) => {
   const transition = d3.transition()
     .duration(100);
 
   grid.selectAll<SVGSVGElement, Player>('.player')
-    .data(Object.values(players), d => d.id)
+    .data(players, d => d.id)
     .join(
       enter => enter
         .append('rect')
@@ -77,17 +72,12 @@ export const updatePlayers = (players: { [id: string]: Player }) => {
         .attr('y', d => (d.y * size) + 1)
         .attr('width', size)
         .attr('height', size)
-        .style('fill', d => `#${d.color}`)
-        .style('opacity', 0)
-        .call(x => x.transition(transition)
-          .style('opacity', 1)),
+        .style('fill', d => `#${d.color}`),
       update => update
         .call(x => x.transition(transition)
           .attr('x', d => (d.x * size) + 1)
           .attr('y', d => (d.y * size) + 1)),
       exit => exit
-        .call(x => x.transition(transition)
-          .style('opacity', 0)
-          .remove()),
+        .remove(),
     );
 };
