@@ -1,5 +1,4 @@
 import * as d3 from 'd3';
-import { Socket } from 'socket.io-client';
 
 
 type Cell = {
@@ -16,7 +15,7 @@ let grid: d3.Selection<SVGSVGElement, any, HTMLElement, any>;
 let row: d3.Selection<SVGGElement, Cell[], SVGSVGElement, any>;
 // let square: d3.Selection<SVGRectElement, Cell, SVGGElement, Cell[]>;
 
-const createGrid = () => {
+export const createGrid = () => {
   const rows: Cell[][] = [];
 
   for (let y = 0; y < height; y += 1) {
@@ -61,7 +60,7 @@ const createGrid = () => {
 
 type Coord = [number, number];
 
-const updateCells = (cells: Coord[]) => {
+export const updateCells = (cells: Coord[]) => {
   const transition = d3.transition()
     .duration(100);
 
@@ -97,28 +96,3 @@ const updateCells = (cells: Coord[]) => {
 //     .join('.square')
 //     .style('fill', d => (d.alive ? '#666' : '#fff'));
 // };
-
-const life = (socket: Socket) => {
-  createGrid();
-
-  // socket.on('rows', newRows => {
-  //   for (let y = 0; y < newRows.length; y += 1) {
-  //     for (let x = 0; x < newRows[y].length; x += 1) {
-  //       rows[y][x].alive = newRows[y][x];
-  //     }
-  //   }
-
-  //   updateGrid(rows);
-  // });
-
-  socket.on('cells', cells => {
-    updateCells(cells);
-  });
-
-  document.body.addEventListener('keyup', e => {
-    if (e.key === 'Enter') {
-      socket.emit('reset');
-    }
-  });
-};
-export default life;

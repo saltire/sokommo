@@ -1,5 +1,4 @@
 import * as d3 from 'd3';
-import { Socket } from 'socket.io-client';
 
 
 type Cell = {
@@ -7,25 +6,22 @@ type Cell = {
   y: number,
 };
 
-type Player = {
+export type Player = {
   id: string,
   x: number,
   y: number,
   color: string,
 };
-let players: { [id: string]: Player } = {};
 
 const size = 50;
 const width = 20;
 const height = 20;
 
-const dirKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
-
 let grid: d3.Selection<SVGSVGElement, any, HTMLElement, any>;
 let row: d3.Selection<SVGGElement, Cell[], SVGSVGElement, any>;
 // let square: d3.Selection<SVGRectElement, Cell, SVGGElement, Cell[]>;
 
-const createGrid = () => {
+export const createGrid = () => {
   const rows: Cell[][] = [];
 
   for (let y = 0; y < height; y += 1) {
@@ -67,7 +63,7 @@ const createGrid = () => {
   return rows;
 };
 
-const updatePlayers = () => {
+export const updatePlayers = (players: { [id: string]: Player }) => {
   const transition = d3.transition()
     .duration(100);
 
@@ -95,34 +91,3 @@ const updatePlayers = () => {
           .remove()),
     );
 };
-
-const soko = (socket: Socket) => {
-  createGrid();
-
-  socket.on('players', (newPlayers: { [id: string]: Player }) => {
-    players = newPlayers;
-    updatePlayers();
-  });
-
-  socket.on('playerAdd', (id: string, player: Player) => {
-    players[id] = player;
-    updatePlayers();
-  });
-
-  socket.on('playerUpdate', (id: string, player: Player) => {
-    players[id] = player;
-    updatePlayers();
-  });
-
-  socket.on('playerDelete', (id: string) => {
-    delete players[id];
-    updatePlayers();
-  });
-
-  document.body.addEventListener('keyup', e => {
-    if (dirKeys.includes(e.key)) {
-      socket.emit('move', dirKeys.indexOf(e.key));
-    }
-  });
-};
-export default soko;
