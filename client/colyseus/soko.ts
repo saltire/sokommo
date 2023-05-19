@@ -1,7 +1,7 @@
 import { Client } from 'colyseus.js';
 
 import { SokoRoomState } from '../../server/rooms/SokoRoom';
-import { createGrid, addPlayer, updatePlayer, removePlayer } from '../lib/soko';
+import Soko from '../lib/soko';
 
 
 const dirKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
@@ -10,17 +10,17 @@ const sokoClient = (client: Client) => {
   client.joinOrCreate<SokoRoomState>('soko_room')
     .then(room => {
       console.log(room.sessionId, 'joined', room.name);
-      createGrid();
+
+      const soko = new Soko();
 
       room.state.players.onAdd(player => {
-        addPlayer(player);
-        console.log(player.x, player.y);
+        soko.addPlayer(player);
 
-        player.onChange(() => updatePlayer(player));
+        player.onChange(() => soko.updatePlayer(player));
       });
 
       room.state.players.onRemove(player => {
-        removePlayer(player);
+        soko.removePlayer(player);
       });
 
       document.body.addEventListener('keyup', e => {
