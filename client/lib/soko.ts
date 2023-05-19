@@ -1,26 +1,42 @@
 import Konva from 'konva';
 
-import { Player } from '../../server/rooms/SokoRoom';
+import { SokoRoomState, Player } from '../../server/rooms/SokoRoom';
 
-
-const cellSize = 30;
-const gridWidth = 20;
-const gridHeight = 20;
-
-const gridPos = (
-  units: number, unitSize: number = cellSize, borderSize: number = 1,
-) => units * (unitSize + borderSize) + borderSize;
 
 export default class Soko {
+  cellSize: number = 30;
+  gridSize: number = 20;
+
+  state: SokoRoomState;
+
   stage: Konva.Stage;
   grid: Konva.Layer;
   players: Konva.Layer;
 
-  constructor() {
+  cellPos(cells: number) {
+    return cells * (this.cellSize + 1) + 1;
+  }
+
+  constructor(state: SokoRoomState) {
+    // Handle state
+
+    this.state = state;
+
+    this.state.players.onAdd(player => {
+      this.addPlayer(player);
+      player.onChange(() => this.updatePlayer(player));
+    });
+
+    this.state.players.onRemove(player => {
+      this.removePlayer(player);
+    });
+
+    // Initialize stage and layers
+
     this.stage = new Konva.Stage({
       container: 'grid',
-      width: gridPos(gridWidth),
-      height: gridPos(gridHeight),
+      width: this.cellPos(this.gridSize),
+      height: this.cellPos(this.gridSize),
     });
 
     this.grid = new Konva.Layer({
@@ -30,47 +46,86 @@ export default class Soko {
 
     this.players = new Konva.Layer({
       listening: false,
+      visible: false,
     });
     this.stage.add(this.players);
 
-    this.drawGrid();
+    // Size grid to window
+
+    let debounceTimeout: any;
+
+    const observer = new ResizeObserver(entries => {
+      entries.forEach(entry => {
+        entry.contentBoxSize.forEach(boxSize => {
+          clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(() => {
+            this.updateSize(boxSize.blockSize, boxSize.inlineSize);
+          }, 200);
+        });
+      });
+    });
+    observer.observe(document.body);
+  }
+
+  updateSize(width: number, height: number) {
+    const windowSize = Math.min(width, height);
+    const cellSize = Math.max(5, Math.min(50, Math.floor((windowSize - 1) / this.gridSize) - 1));
+
+    if (cellSize !== this.cellSize) {
+      this.cellSize = cellSize;
+
+      this.stage.size({
+        width: this.cellPos(this.gridSize),
+        height: this.cellPos(this.gridSize),
+      });
+      this.drawGrid();
+      this.drawPlayers();
+    }
   }
 
   drawGrid() {
-    for (let y = 0; y < gridHeight; y += 1) {
-      for (let x = 0; x < gridWidth; x += 1) {
+    this.players.visible(false);
+    this.grid.destroyChildren();
+    for (let y = 0; y < this.gridSize; y += 1) {
+      for (let x = 0; x < this.gridSize; x += 1) {
         this.grid.add(new Konva.Rect({
-          x: gridPos(x),
-          y: gridPos(y),
-          width: cellSize + 1,
-          height: cellSize + 1,
+          x: this.cellPos(x),
+          y: this.cellPos(y),
+          width: this.cellSize + 1,
+          height: this.cellSize + 1,
           stroke: 'black',
           strokeWidth: 1,
         }));
       }
     }
+    this.players.visible(true);
   }
 
   addPlayer(player: Player) {
     this.players.add(new Konva.Rect({
       id: player.id,
-      x: gridPos(player.x),
-      y: gridPos(player.y),
-      width: cellSize,
-      height: cellSize,
+      x: this.cellPos(player.x),
+      y: this.cellPos(player.y),
+      width: this.cellSize,
+      height: this.cellSize,
       fill: player.color,
     }));
   }
 
   updatePlayer(player: Player) {
     this.players.findOne(`#${player.id}`).to({
-      x: gridPos(player.x),
-      y: gridPos(player.y),
+      x: this.cellPos(player.x),
+      y: this.cellPos(player.y),
       duration: 0.05,
     });
   }
 
   removePlayer(player: Player) {
     this.players.findOne(`#${player.id}`).destroy();
+  }
+
+  drawPlayers() {
+    this.players.destroyChildren();
+    this.state.players.forEach(player => this.addPlayer(player));
   }
 }

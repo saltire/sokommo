@@ -11,17 +11,7 @@ const sokoClient = (client: Client) => {
     .then(room => {
       console.log(room.sessionId, 'joined', room.name);
 
-      const soko = new Soko();
-
-      room.state.players.onAdd(player => {
-        soko.addPlayer(player);
-
-        player.onChange(() => soko.updatePlayer(player));
-      });
-
-      room.state.players.onRemove(player => {
-        soko.removePlayer(player);
-      });
+      const soko = new Soko(room.state); // eslint-disable-line @typescript-eslint/no-unused-vars
 
       document.body.addEventListener('keyup', e => {
         if (dirKeys.includes(e.key)) {
