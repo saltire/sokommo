@@ -8,9 +8,9 @@ const width = 20;
 const height = 20;
 
 const colors = [
-  'f00',
-  '0f0',
-  '00f',
+  '#f00',
+  '#0f0',
+  '#00f',
 ];
 
 const dirs = [
@@ -36,7 +36,6 @@ export default class SokoRoom extends Room<SokoRoomState> {
     this.setState(new SokoRoomState());
 
     this.onMessage('move', (client, dir: number) => {
-      console.log('move', client.sessionId, dir);
       const [dx, dy] = dirs[dir] || [0, 0];
       const player = this.state.players.get(client.sessionId);
       if (player && (dx || dy)) {
