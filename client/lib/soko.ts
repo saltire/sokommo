@@ -5,7 +5,6 @@ import { SokoRoomState, Player } from '../../server/rooms/SokoRoom';
 
 export default class Soko {
   cellSize: number = 30;
-  gridSize: number = 20;
 
   state: SokoRoomState;
 
@@ -35,8 +34,6 @@ export default class Soko {
 
     this.stage = new Konva.Stage({
       container: 'grid',
-      width: this.cellPos(this.gridSize),
-      height: this.cellPos(this.gridSize),
     });
 
     this.grid = new Konva.Layer({
@@ -50,33 +47,37 @@ export default class Soko {
     });
     this.stage.add(this.players);
 
-    // Size grid to window
+    // Set up resize observer
 
     let debounceTimeout: any;
-
     const observer = new ResizeObserver(entries => {
       entries.forEach(entry => {
         entry.contentBoxSize.forEach(boxSize => {
           clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(() => {
-            this.updateSize(boxSize.blockSize, boxSize.inlineSize);
+            this.updateSize(boxSize.inlineSize, boxSize.blockSize);
           }, 200);
         });
       });
     });
-    observer.observe(document.body);
+
+    // Once we have grid size from state, start triggering draw events on window resize
+    this.state.listen('width', () => {
+      observer.observe(document.body);
+    });
   }
 
-  updateSize(width: number, height: number) {
-    const windowSize = Math.min(width, height);
-    const cellSize = Math.max(5, Math.min(50, Math.floor((windowSize - 1) / this.gridSize) - 1));
+  updateSize(maxWidth: number, maxHeight: number) {
+    const maxCellWidth = Math.floor((maxWidth - 1) / this.state.width) - 1;
+    const maxCellHeight = Math.floor((maxHeight - 1) / this.state.height) - 1;
+    const cellSize = Math.max(5, Math.min(50, Math.min(maxCellWidth, maxCellHeight)));
 
     if (cellSize !== this.cellSize) {
       this.cellSize = cellSize;
 
       this.stage.size({
-        width: this.cellPos(this.gridSize),
-        height: this.cellPos(this.gridSize),
+        width: this.cellPos(this.state.width),
+        height: this.cellPos(this.state.height),
       });
       this.drawGrid();
       this.drawPlayers();
@@ -86,8 +87,8 @@ export default class Soko {
   drawGrid() {
     this.players.visible(false);
     this.grid.destroyChildren();
-    for (let y = 0; y < this.gridSize; y += 1) {
-      for (let x = 0; x < this.gridSize; x += 1) {
+    for (let y = 0; y < this.state.height; y += 1) {
+      for (let x = 0; x < this.state.width; x += 1) {
         this.grid.add(new Konva.Rect({
           x: this.cellPos(x),
           y: this.cellPos(y),

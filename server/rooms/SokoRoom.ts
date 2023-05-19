@@ -4,9 +4,6 @@ import { Schema, MapSchema, Context, type } from '@colyseus/schema';
 import http from 'http';
 
 
-const width = 20;
-const height = 20;
-
 const colors = [
   '#f00',
   '#0f0',
@@ -28,6 +25,8 @@ export class Player extends Schema {
 }
 
 export class SokoRoomState extends Schema {
+  @type('number') width = 20;
+  @type('number') height = 15;
   @type({ map: Player }) players = new MapSchema<Player>();
 }
 
@@ -39,8 +38,8 @@ export default class SokoRoom extends Room<SokoRoomState> {
       const [dx, dy] = dirs[dir] || [0, 0];
       const player = this.state.players.get(client.sessionId);
       if (player && (dx || dy)) {
-        player.x = Math.max(0, Math.min(width - 1, player.x + dx));
-        player.y = Math.max(0, Math.min(height - 1, player.y + dy));
+        player.x = Math.max(0, Math.min(this.state.width - 1, player.x + dx));
+        player.y = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
       }
     });
   }
@@ -55,8 +54,8 @@ export default class SokoRoom extends Room<SokoRoomState> {
 
     const player = new Player();
     player.id = client.sessionId;
-    player.x = Math.floor(Math.random() * width);
-    player.y = Math.floor(Math.random() * height);
+    player.x = Math.floor(Math.random() * this.state.width);
+    player.y = Math.floor(Math.random() * this.state.height);
     player.color = colors[this.state.players.size % colors.length];
 
     this.state.players.set(client.sessionId, player);
