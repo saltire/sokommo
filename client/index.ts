@@ -5,7 +5,9 @@ import './index.scss';
 import sokoClient from './colyseus/soko';
 
 
-const client = new Colyseus.Client('ws://localhost:2567');
+const { protocol, host } = window.location;
+
+const client = new Colyseus.Client(`${protocol.replace('http', 'ws')}//${host}`);
 
 // lifeClient(client);
 sokoClient(client);

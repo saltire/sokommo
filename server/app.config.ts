@@ -4,7 +4,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import path from 'path';
 
-import routes from './routes';
+import client from './routes/client';
 import LifeRoom from './rooms/LifeRoom';
 import SokoRoom from './rooms/SokoRoom';
 
@@ -25,7 +25,7 @@ export default config({
 
     app.use(morgan('dev'));
 
-    app.use('/', routes);
+    app.use('/', client);
 
     app.use(express.static(path.resolve(__dirname, '../static')));
 
