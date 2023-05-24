@@ -1,7 +1,7 @@
 import { Client } from 'colyseus.js';
 
-import { SokoRoomState } from '../../server/rooms/SokoRoom';
-import Soko from '../lib/soko';
+import { SokoRoomState } from '../../server/lib/sokoServer';
+import SokoClient from '../lib/sokoClient';
 
 
 const dirKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
@@ -11,7 +11,8 @@ const sokoClient = (client: Client) => {
     .then(room => {
       console.log(room.sessionId, 'joined', room.name);
 
-      const soko = new Soko(room.state); // eslint-disable-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const soko = new SokoClient(room.state);
 
       document.body.addEventListener('keyup', e => {
         if (dirKeys.includes(e.key)) {

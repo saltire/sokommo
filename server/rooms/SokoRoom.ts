@@ -1,46 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Room, Client } from 'colyseus';
-import { Schema, MapSchema, Context, type } from '@colyseus/schema';
 import http from 'http';
 
+import { SokoRoomState, addPlayer, removePlayer, movePlayer } from '../lib/sokoServer';
 
-const colors = [
-  '#f00',
-  '#0f0',
-  '#00f',
-];
-
-const dirs = [
-  [0, -1], // N
-  [1, 0], //  E
-  [0, 1], //  S
-  [-1, 0], // W
-];
-
-export class Player extends Schema {
-  @type('string') id!: string;
-  @type('number') x!: number;
-  @type('number') y!: number;
-  @type('string') color!: string;
-}
-
-export class SokoRoomState extends Schema {
-  @type('number') width = 20;
-  @type('number') height = 15;
-  @type({ map: Player }) players = new MapSchema<Player>();
-}
 
 export default class SokoRoom extends Room<SokoRoomState> {
   async onCreate(options: any) {
     this.setState(new SokoRoomState());
 
     this.onMessage('move', (client, dir: number) => {
-      const [dx, dy] = dirs[dir] || [0, 0];
-      const player = this.state.players.get(client.sessionId);
-      if (player && (dx || dy)) {
-        player.x = Math.max(0, Math.min(this.state.width - 1, player.x + dx));
-        player.y = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
-      }
+      movePlayer(this.state, client.sessionId, dir);
     });
   }
 
@@ -50,21 +20,11 @@ export default class SokoRoom extends Room<SokoRoomState> {
   }
 
   async onJoin(client: Client, options: any) {
-    console.log(client.sessionId, 'joined!');
-
-    const player = new Player();
-    player.id = client.sessionId;
-    player.x = Math.floor(Math.random() * this.state.width);
-    player.y = Math.floor(Math.random() * this.state.height);
-    player.color = colors[this.state.players.size % colors.length];
-
-    this.state.players.set(client.sessionId, player);
+    addPlayer(this.state, client.sessionId);
   }
 
   async onLeave(client: Client, consented: boolean) {
-    console.log(client.sessionId, 'left!');
-
-    this.state.players.delete(client.sessionId);
+    removePlayer(this.state, client.sessionId);
   }
 
   async onDispose() {

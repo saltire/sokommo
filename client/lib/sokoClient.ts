@@ -1,9 +1,9 @@
 import Konva from 'konva';
 
-import { SokoRoomState, Player } from '../../server/rooms/SokoRoom';
+import { SokoRoomState, Player } from '../../server/lib/sokoServer';
 
 
-export default class Soko {
+export default class SokoClient {
   cellSize: number = 30;
 
   state: SokoRoomState;
