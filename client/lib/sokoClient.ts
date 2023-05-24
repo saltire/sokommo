@@ -1,132 +1,148 @@
+import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
 import { SokoRoomState, Player } from '../../server/lib/sokoServer';
 
 
-export default class SokoClient {
-  cellSize: number = 30;
+// Set up stage and layers
 
-  state: SokoRoomState;
+const stage = new Konva.Stage({
+  container: 'grid',
+});
 
-  stage: Konva.Stage;
-  grid: Konva.Layer;
-  players: Konva.Layer;
+const grid = new Konva.Layer({
+  listening: false,
+});
+stage.add(grid);
 
-  cellPos(cells: number) {
-    return cells * (this.cellSize + 1) + 1;
-  }
+const players = new Konva.Layer({
+  listening: false,
+  visible: false,
+});
+stage.add(players);
 
-  constructor(state: SokoRoomState) {
-    // Handle state
 
-    this.state = state;
+// Cell size
 
-    this.state.players.onAdd(player => {
-      this.addPlayer(player);
-      player.onChange(() => this.updatePlayer(player));
-    });
+let cellSize = 30;
+const cellPos = (cells: number) => cells * (cellSize + 1) + 1;
 
-    this.state.players.onRemove(player => {
-      this.removePlayer(player);
-    });
 
-    // Initialize stage and layers
+// Player event handlers
 
-    this.stage = new Konva.Stage({
-      container: 'grid',
-    });
+const addPlayer = (player: Player) => {
+  players.add(new Konva.Rect({
+    id: player.id,
+    x: cellPos(player.x),
+    y: cellPos(player.y),
+    width: cellSize,
+    height: cellSize,
+    fill: player.color,
+  }));
+};
 
-    this.grid = new Konva.Layer({
-      listening: false,
-    });
-    this.stage.add(this.grid);
+const updatePlayer = (player: Player) => {
+  players.findOne(`#${player.id}`).to({
+    x: cellPos(player.x),
+    y: cellPos(player.y),
+    duration: 0.05,
+  });
+};
 
-    this.players = new Konva.Layer({
-      listening: false,
-      visible: false,
-    });
-    this.stage.add(this.players);
+const removePlayer = (player: Player) => {
+  players.findOne(`#${player.id}`).destroy();
+};
 
-    // Set up resize observer
 
-    let debounceTimeout: any;
-    const observer = new ResizeObserver(entries => {
-      entries.forEach(entry => {
-        entry.contentBoxSize.forEach(boxSize => {
-          clearTimeout(debounceTimeout);
-          debounceTimeout = setTimeout(() => {
-            this.updateSize(boxSize.inlineSize, boxSize.blockSize);
-          }, 200);
-        });
-      });
-    });
+// Environmental functions
 
-    // Once we have grid size from state, start triggering draw events on window resize
-    this.state.listen('width', () => {
-      observer.observe(document.body);
-    });
-  }
-
-  updateSize(maxWidth: number, maxHeight: number) {
-    const maxCellWidth = Math.floor((maxWidth - 1) / this.state.width) - 1;
-    const maxCellHeight = Math.floor((maxHeight - 1) / this.state.height) - 1;
-    const cellSize = Math.max(5, Math.min(50, Math.min(maxCellWidth, maxCellHeight)));
-
-    if (cellSize !== this.cellSize) {
-      this.cellSize = cellSize;
-
-      this.stage.size({
-        width: this.cellPos(this.state.width),
-        height: this.cellPos(this.state.height),
-      });
-      this.drawGrid();
-      this.drawPlayers();
+const drawGrid = (gridWidth: number, gridHeight: number) => {
+  players.visible(false);
+  grid.destroyChildren();
+  for (let y = 0; y < gridHeight; y += 1) {
+    for (let x = 0; x < gridWidth; x += 1) {
+      grid.add(new Konva.Rect({
+        x: cellPos(x),
+        y: cellPos(y),
+        width: cellSize + 1,
+        height: cellSize + 1,
+        stroke: 'black',
+        strokeWidth: 1,
+      }));
     }
   }
+  players.visible(true);
+};
 
-  drawGrid() {
-    this.players.visible(false);
-    this.grid.destroyChildren();
-    for (let y = 0; y < this.state.height; y += 1) {
-      for (let x = 0; x < this.state.width; x += 1) {
-        this.grid.add(new Konva.Rect({
-          x: this.cellPos(x),
-          y: this.cellPos(y),
-          width: this.cellSize + 1,
-          height: this.cellSize + 1,
-          stroke: 'black',
-          strokeWidth: 1,
-        }));
-      }
-    }
-    this.players.visible(true);
-  }
+const drawPlayers = (state: SokoRoomState) => {
+  players.destroyChildren();
+  state.players.forEach(player => addPlayer(player));
+};
 
-  addPlayer(player: Player) {
-    this.players.add(new Konva.Rect({
-      id: player.id,
-      x: this.cellPos(player.x),
-      y: this.cellPos(player.y),
-      width: this.cellSize,
-      height: this.cellSize,
-      fill: player.color,
-    }));
-  }
+const updateSize = (
+  state: SokoRoomState, viewWidth: number, viewHeight: number,
+) => {
+  const maxCellWidth = Math.floor((viewWidth - 1) / state.width) - 1;
+  const maxCellHeight = Math.floor((viewHeight - 1) / state.height) - 1;
+  const newCellSize = Math.max(5, Math.min(50, Math.min(maxCellWidth, maxCellHeight)));
 
-  updatePlayer(player: Player) {
-    this.players.findOne(`#${player.id}`).to({
-      x: this.cellPos(player.x),
-      y: this.cellPos(player.y),
-      duration: 0.05,
+  if (newCellSize !== cellSize) {
+    cellSize = newCellSize;
+
+    stage.size({
+      width: cellPos(state.width),
+      height: cellPos(state.height),
     });
+    drawGrid(state.width, state.height);
+    drawPlayers(state);
   }
+};
 
-  removePlayer(player: Player) {
-    this.players.findOne(`#${player.id}`).destroy();
-  }
 
-  drawPlayers() {
-    this.players.destroyChildren();
-    this.state.players.forEach(player => this.addPlayer(player));
-  }
-}
+// Initial setup
+
+/* eslint-disable import/prefer-default-export */
+export const setupSokoClient = (state: SokoRoomState) => {
+  // Set up state events
+
+  state.players.onAdd(player => {
+    addPlayer(player);
+    player.onChange(() => updatePlayer(player));
+  });
+
+  state.players.onRemove(player => {
+    removePlayer(player);
+  });
+
+  // Set up resize observer
+
+  let debounceTimeout: any;
+  const observer = new ResizeObserver(entries => {
+    entries.forEach(entry => {
+      entry.contentBoxSize.forEach(boxSize => {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+          updateSize(state, boxSize.inlineSize, boxSize.blockSize);
+        }, 200);
+      });
+    });
+  });
+
+  // Once we have grid size from state, start triggering draw events on window resize.
+  state.listen('width', () => {
+    observer.observe(document.body);
+  });
+};
+
+
+// Input handling
+
+const dirKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
+
+export const handleInput = (room: Room<SokoRoomState>) => {
+  document.body.addEventListener('keyup', e => {
+    if (dirKeys.includes(e.key)) {
+      room.send('move', dirKeys.indexOf(e.key));
+    }
+  });
+};
