@@ -5,6 +5,7 @@ export class Player extends Schema {
   @type('string') id!: string;
   @type('number') x!: number;
   @type('number') y!: number;
+  @type('number') rot!: number;
   @type('string') color!: string;
 }
 
@@ -32,6 +33,7 @@ export const addPlayer = (state: SokoRoomState, sessionId: string) => {
     id: sessionId,
     x: Math.floor(Math.random() * state.width),
     y: Math.floor(Math.random() * state.height),
+    rot: Math.floor(Math.random() * 4),
     color: colors[state.players.size % colors.length],
   }));
 };
@@ -46,5 +48,8 @@ export const movePlayer = (state: SokoRoomState, sessionId: string, dir: number)
   if (player && (dx || dy)) {
     player.x = Math.max(0, Math.min(state.width - 1, player.x + dx));
     player.y = Math.max(0, Math.min(state.height - 1, player.y + dy));
+
+    const dr = (dir - (player.rot % 4) + 4) % 4;
+    player.rot += (dr === 3 ? -1 : dr);
   }
 };

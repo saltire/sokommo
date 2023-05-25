@@ -31,20 +31,35 @@ const cellPos = (cells: number) => cells * (cellSize + 1) + 1;
 // Player event handlers
 
 const addPlayer = (player: Player) => {
-  players.add(new Konva.Rect({
+  const group = new Konva.Group({
     id: player.id,
-    x: cellPos(player.x),
-    y: cellPos(player.y),
     width: cellSize,
     height: cellSize,
+    x: cellPos(player.x),
+    y: cellPos(player.y),
+    rotation: player.rot * 90,
+  });
+
+  group.add(new Konva.Circle({
+    radius: cellSize * 0.35,
     fill: player.color,
   }));
+
+  group.add(new Konva.Rect({
+    width: cellSize * 0.35,
+    height: cellSize * 0.35,
+    fill: player.color,
+    rotation: -135,
+  }));
+
+  players.add(group);
 };
 
 const updatePlayer = (player: Player) => {
   players.findOne(`#${player.id}`).to({
     x: cellPos(player.x),
     y: cellPos(player.y),
+    rotation: player.rot * 90,
     duration: 0.05,
   });
 };
@@ -66,6 +81,8 @@ const drawGrid = (gridWidth: number, gridHeight: number) => {
         y: cellPos(y),
         width: cellSize + 1,
         height: cellSize + 1,
+        offsetX: cellSize * 0.5,
+        offsetY: cellSize * 0.5,
         stroke: 'black',
         strokeWidth: 1,
       }));
@@ -89,9 +106,11 @@ const updateSize = (
   if (newCellSize !== cellSize) {
     cellSize = newCellSize;
 
-    stage.size({
+    stage.setAttrs({
       width: cellPos(state.width),
       height: cellPos(state.height),
+      offsetX: -cellSize * 0.5,
+      offsetY: -cellSize * 0.5,
     });
     drawGrid(state.width, state.height);
     drawPlayers(state);
