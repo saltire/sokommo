@@ -4,22 +4,9 @@ import Konva from 'konva';
 import { SokoRoomState, Player } from '../../server/lib/sokoServer';
 
 
-// Set up stage and layers
-
-const stage = new Konva.Stage({
-  container: 'grid',
-});
-
-const grid = new Konva.Layer({
-  listening: false,
-});
-stage.add(grid);
-
-const players = new Konva.Layer({
-  listening: false,
-  visible: false,
-});
-stage.add(players);
+let stage: Konva.Stage;
+let grid: Konva.Layer;
+let players: Konva.Layer;
 
 
 // Cell size
@@ -120,8 +107,24 @@ const updateSize = (
 
 // Initial setup
 
-/* eslint-disable import/prefer-default-export */
 export const setupSokoClient = (state: SokoRoomState) => {
+  // Set up stage and layers
+
+  stage = new Konva.Stage({
+    container: 'grid',
+  });
+
+  grid = new Konva.Layer({
+    listening: false,
+  });
+  stage.add(grid);
+
+  players = new Konva.Layer({
+    listening: false,
+    visible: false,
+  });
+  stage.add(players);
+
   // Set up state events
 
   state.players.onAdd(player => {

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "experimentalDecorators": true,
+    "jsx": "preserve",
     "lib": ["ES2020", "dom"],
     "module": "ES2020",
     "moduleResolution": "node",

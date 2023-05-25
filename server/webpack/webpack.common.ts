@@ -7,7 +7,7 @@ import { Configuration } from 'webpack';
 
 
 const config: Configuration = {
-  entry: path.resolve(__dirname, '../../client/index.ts'),
+  entry: path.resolve(__dirname, '../../client/index.tsx'),
   output: {
     filename: '[name].[contenthash].js',
     chunkFilename: '[name].[chunkhash].js',
@@ -20,7 +20,7 @@ const config: Configuration = {
   module: {
     rules: [
       {
-        test: /\.ts$/,
+        test: /\.tsx?$/,
         exclude: /node_modules/,
         use: 'babel-loader',
       },
@@ -35,7 +35,7 @@ const config: Configuration = {
     ],
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
   optimization: {
     minimizer: [
