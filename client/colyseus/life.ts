@@ -4,7 +4,7 @@ import { LifeRoomState } from '../../server/rooms/LifeRoom';
 import { createGrid, updateCells } from '../lib/life';
 
 
-const lifeClient = (client: Client) => {
+const life = (client: Client) => {
   client.joinOrCreate<LifeRoomState>('life_room')
     .then(room => {
       console.log(room.sessionId, 'joined', room.name);
@@ -29,4 +29,4 @@ const lifeClient = (client: Client) => {
       console.error('JOIN ERROR', e);
     });
 };
-export default lifeClient;
+export default life;

@@ -4,7 +4,7 @@ import { SokoRoomState } from '../../server/lib/sokoServer';
 import { setupSokoClient, handleInput } from '../lib/sokoClient';
 
 
-const sokoClient = (client: Client) => {
+const soko = (client: Client) => {
   client.joinOrCreate<SokoRoomState>('soko_room')
     .then(room => {
       setupSokoClient(room.state);
@@ -14,4 +14,4 @@ const sokoClient = (client: Client) => {
       console.error('JOIN ERROR', e);
     });
 };
-export default sokoClient;
+export default soko;
