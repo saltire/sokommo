@@ -31,13 +31,13 @@ const addPlayer = (player: Player) => {
 
   group.add(new Konva.Circle({
     radius: cellSize * 0.35,
-    fill: player.color,
+    fill: `#${player.color}`,
   }));
 
   group.add(new Konva.Rect({
     width: cellSize * 0.35,
     height: cellSize * 0.35,
-    fill: player.color,
+    fill: `#${player.color}`,
     rotation: -135,
   }));
 

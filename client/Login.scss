@@ -1,0 +1,44 @@
+.Login {
+  margin: auto;
+  padding: 5px 20px;
+  border-radius: 5px;
+  background: #f4f4f4;
+  text-align: center;
+
+  input, button {
+    padding: 5px 10px;
+    border: 0;
+    border-radius: 3px;
+    background: white;
+    font-family: inherit;
+    font-size: inherit;
+    text-align: center;
+  }
+
+  button {
+    border-width: 1px 1px 3px;
+    border-style: solid;
+    border-color: #333;
+    cursor: pointer;
+
+    &[disabled] {
+      pointer-events: none;
+    }
+  }
+
+  .colors {
+    button {
+      width: 20px;
+      height: 20px;
+      margin: 0 5px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      box-shadow: 0 2px 0 1px #333;
+
+      &.selected {
+        box-shadow: 0 2px 0 4px #333;
+      }
+    }
+  }
+}

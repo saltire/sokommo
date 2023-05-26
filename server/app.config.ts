@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import path from 'path';
 
 import client from './routes/client';
-import LifeRoom from './rooms/LifeRoom';
+// import LifeRoom from './rooms/LifeRoom';
 import SokoRoom from './rooms/SokoRoom';
 
 
@@ -13,7 +13,7 @@ export default config({
   getId: () => 'Your Colyseus App',
 
   initializeGameServer: gameServer => {
-    gameServer.define('life_room', LifeRoom);
+    // gameServer.define('life_room', LifeRoom);
     gameServer.define('soko_room', SokoRoom);
   },
 

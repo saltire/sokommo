@@ -1,12 +1,18 @@
 import { Schema, MapSchema, type } from '@colyseus/schema';
 
 
+export type PlayerData = {
+  name: string,
+  color: string,
+};
+
 export class Player extends Schema {
   @type('string') id!: string;
+  @type('string') name!: string;
+  @type('string') color!: string;
   @type('number') x!: number;
   @type('number') y!: number;
   @type('number') rot!: number;
-  @type('string') color!: string;
 }
 
 export class SokoRoomState extends Schema {
@@ -22,19 +28,14 @@ const dirs = [
   [-1, 0], // W
 ];
 
-const colors = [
-  '#f00',
-  '#0f0',
-  '#00f',
-];
-
-export const addPlayer = (state: SokoRoomState, sessionId: string) => {
+export const addPlayer = (state: SokoRoomState, sessionId: string, options: PlayerData) => {
   state.players.set(sessionId, new Player({
     id: sessionId,
+    name: options.name,
+    color: options.color,
     x: Math.floor(Math.random() * state.width),
     y: Math.floor(Math.random() * state.height),
     rot: Math.floor(Math.random() * 4),
-    color: colors[state.players.size % colors.length],
   }));
 };
 

@@ -2,7 +2,9 @@
 import { Room, Client } from 'colyseus';
 import http from 'http';
 
-import { SokoRoomState, addPlayer, removePlayer, movePlayer } from '../lib/sokoServer';
+import {
+  PlayerData, SokoRoomState, addPlayer, removePlayer, movePlayer,
+} from '../lib/sokoServer';
 
 
 export default class SokoRoom extends Room<SokoRoomState> {
@@ -19,9 +21,9 @@ export default class SokoRoom extends Room<SokoRoomState> {
     return true;
   }
 
-  async onJoin(client: Client, options: any) {
+  async onJoin(client: Client, options: PlayerData) {
     console.log(client.sessionId, 'joined.');
-    addPlayer(this.state, client.sessionId);
+    addPlayer(this.state, client.sessionId, options);
   }
 
   async onLeave(client: Client, consented: boolean) {
