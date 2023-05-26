@@ -11,6 +11,8 @@ let players: Konva.Layer;
 
 // Cell size
 
+const minCellSize = 5;
+const maxCellSize = 60;
 let cellSize = 30;
 const cellPos = (cells: number) => cells * (cellSize + 1) + 1;
 
@@ -88,7 +90,8 @@ const updateSize = (
 ) => {
   const maxCellWidth = Math.floor((viewWidth - 1) / state.width) - 1;
   const maxCellHeight = Math.floor((viewHeight - 1) / state.height) - 1;
-  const newCellSize = Math.max(5, Math.min(50, Math.min(maxCellWidth, maxCellHeight)));
+  const newCellSize = Math.max(minCellSize, Math.min(maxCellSize,
+    Math.min(maxCellWidth, maxCellHeight)));
 
   if (newCellSize !== cellSize) {
     cellSize = newCellSize;
@@ -107,11 +110,11 @@ const updateSize = (
 
 // Initial setup
 
-export const setupSokoClient = (state: SokoRoomState) => {
+export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) => {
   // Set up stage and layers
 
   stage = new Konva.Stage({
-    container: 'grid',
+    container: element,
   });
 
   grid = new Konva.Layer({
@@ -152,7 +155,9 @@ export const setupSokoClient = (state: SokoRoomState) => {
 
   // Once we have grid size from state, start triggering draw events on window resize.
   state.listen('width', () => {
-    observer.observe(document.body);
+    if (element.parentElement) {
+      observer.observe(element.parentElement);
+    }
   });
 };
 

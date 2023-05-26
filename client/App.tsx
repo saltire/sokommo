@@ -1,22 +1,37 @@
-import { useEffect } from 'react';
-import * as Colyseus from 'colyseus.js';
+import { useEffect, useRef } from 'react';
+import { Client } from 'colyseus.js';
 
-import './index.scss';
-// import life from './colyseus/life';
-import soko from './colyseus/soko';
+import './App.scss';
+import { setupSokoClient, handleInput } from './lib/sokoClient';
+import { SokoRoomState } from '../server/lib/sokoServer';
 
 
 const { protocol, host } = window.location;
 
 export default function App() {
-  useEffect(() => {
-    const client = new Colyseus.Client(`${protocol.replace('http', 'ws')}//${host}`);
+  const grid = useRef<HTMLDivElement>(null);
+  const client = useRef<Client | null>(null);
 
-    // life(client);
-    soko(client);
-  }, []);
+  useEffect(() => {
+    if (grid.current && !client.current) {
+      client.current = new Client(`${protocol.replace('http', 'ws')}//${host}`);
+
+      client.current.joinOrCreate<SokoRoomState>('soko_room')
+        .then(room => {
+          if (grid.current) {
+            setupSokoClient(room.state, grid.current);
+            handleInput(room);
+          }
+        })
+        .catch(e => {
+          console.error('JOIN ERROR', e);
+        });
+    }
+  }, [grid.current, client.current]);
 
   return (
-    <div id='grid' />
+    <div className='App'>
+      <div ref={grid} />
+    </div>
   );
 }
