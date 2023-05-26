@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
 
 import './Login.scss';
 import { PlayerData } from '../server/lib/sokoServer';
@@ -13,6 +14,27 @@ type LoginProps = {
 export default function Login({ onLogin }: LoginProps) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(() => colors[Math.floor(Math.random() * colors.length)]);
+
+  useEffect(() => {
+    axios.get<Partial<PlayerData>>('/api/player')
+      .then(({ data }) => {
+        const { name, color } = data;
+        if (name) {
+          setName(name);
+        }
+        if (color) {
+          setColor(color);
+        }
+      })
+      .catch(err => console.error('Error getting player data:', err));
+  }, []);
+
+  const login = useCallback(() => {
+    const playerData = { name, color };
+    axios.post('/api/player', playerData)
+      .catch(err => console.error('Error saving player data:', err));
+    onLogin(playerData);
+  }, [name, color]);
 
   return (
     <div className='Login'>
@@ -40,9 +62,7 @@ export default function Login({ onLogin }: LoginProps) {
       </p>
 
       <p>
-        <button type='button' disabled={!name.trim()} onClick={() => onLogin({ name, color })}>
-          Log in
-        </button>
+        <button type='button' disabled={!name.trim()} onClick={login}>Log in</button>
       </p>
     </div>
   );

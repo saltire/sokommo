@@ -2,5 +2,5 @@
 /built
 /dist
 npm-debug.log
-.env
+.env*
 .vscode

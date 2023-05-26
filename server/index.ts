@@ -1,7 +1,63 @@
-import { listen } from '@colyseus/tools';
+import config, { listen } from '@colyseus/tools';
+import { monitor } from '@colyseus/monitor';
+import MongoStore from 'connect-mongo';
+import express, { Request, Response, NextFunction } from 'express';
+import session from 'express-session';
+import morgan from 'morgan';
+import path from 'path';
 
-import app from './app.config';
+import { getClient } from './db/client';
+import api from './routes/api';
+import client from './routes/client';
+// import LifeRoom from './rooms/LifeRoom';
+import SokoRoom from './rooms/SokoRoom';
 
+
+const appConfig = config({
+  getId: () => 'Your Colyseus App',
+
+  initializeGameServer: gameServer => {
+    // gameServer.define('life_room', LifeRoom);
+    gameServer.define('soko_room', SokoRoom);
+  },
+
+  initializeExpress: app => {
+    // Bind @colyseus/monitor
+    // It is recommended to protect this route with a password.
+    // Read more: https://docs.colyseus.io/tools/monitor/#restrict-access-to-the-panel-using-a-password
+    app.use('/colyseus', monitor());
+
+    app.use(morgan('dev'));
+    app.use(session({
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 7, // One week
+        secure: process.env.NODE_ENV === 'production',
+      },
+      resave: false,
+      saveUninitialized: false,
+      secret: process.env.SESSION_SECRET || 'soko-1234',
+      store: MongoStore.create({
+        clientPromise: getClient(),
+        collectionName: 'expresssessions',
+      }),
+    }))
+
+    app.use('/api', api);
+    app.use('/', client);
+
+    app.use(express.static(path.resolve(__dirname, '../static')));
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+      console.error('Unhandled error:', err);
+      res.status(500).send(err.message);
+    });
+  },
+
+  beforeListen: () => {
+    // Before gameServer.listen() is called.
+  },
+});
 
 // Create and listen on 2567 (or PORT environment variable.)
-listen(app);
+listen(appConfig);
