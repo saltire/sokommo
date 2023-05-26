@@ -20,10 +20,12 @@ export default class SokoRoom extends Room<SokoRoomState> {
   }
 
   async onJoin(client: Client, options: any) {
+    console.log(client.sessionId, 'joined.');
     addPlayer(this.state, client.sessionId);
   }
 
   async onLeave(client: Client, consented: boolean) {
+    console.log(client.sessionId, 'left.');
     removePlayer(this.state, client.sessionId);
   }
 

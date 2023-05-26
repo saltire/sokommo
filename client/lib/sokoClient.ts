@@ -45,7 +45,7 @@ const addPlayer = (player: Player) => {
 };
 
 const updatePlayer = (player: Player) => {
-  players.findOne(`#${player.id}`).to({
+  players.findOne(`#${player.id}`)?.to({
     x: cellPos(player.x),
     y: cellPos(player.y),
     rotation: player.rot * 90,
@@ -54,7 +54,7 @@ const updatePlayer = (player: Player) => {
 };
 
 const removePlayer = (player: Player) => {
-  players.findOne(`#${player.id}`).destroy();
+  players.findOne(`#${player.id}`)?.destroy();
 };
 
 
@@ -167,9 +167,15 @@ export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) =
 const dirKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
 
 export const handleInput = (room: Room<SokoRoomState>) => {
-  document.body.addEventListener('keyup', e => {
+  const onKeyUp = (e: KeyboardEvent) => {
     if (dirKeys.includes(e.key)) {
       room.send('move', dirKeys.indexOf(e.key));
     }
-  });
+  };
+
+  document.body.addEventListener('keyup', onKeyUp);
+
+  return () => {
+    document.body.removeEventListener('keyup', onKeyUp);
+  }
 };
