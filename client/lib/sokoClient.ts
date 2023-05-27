@@ -1,13 +1,12 @@
 import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
-import { SokoRoomState, Player, Crate } from '../../server/rooms/SokoRoom';
+import { SokoRoomState, Bomb, Crate, Player } from '../../server/rooms/SokoRoom';
 
 
 let stage: Konva.Stage;
 let grid: Konva.Layer;
-let players: Konva.Layer;
-let crates: Konva.Layer;
+let items: Konva.Layer;
 
 const moveDuration = 0.05;
 
@@ -74,11 +73,11 @@ const addPlayer = (player: Player) => {
     image.src = player.imageUrl;
   }
 
-  players.add(playerGroup);
+  items.add(playerGroup);
 };
 
 const updatePlayer = (player: Player) => {
-  const playerGroup = players.findOne<Konva.Group>(`#${player.id}`);
+  const playerGroup = items.findOne<Konva.Group>(`#${player.id}`);
   if (playerGroup) {
     playerGroup.to({
       x: cellPos(player.x),
@@ -94,19 +93,14 @@ const updatePlayer = (player: Player) => {
 };
 
 const removePlayer = (player: Player) => {
-  players.findOne(`#${player.id}`)?.destroy();
-};
-
-const drawPlayers = (state: SokoRoomState) => {
-  players.destroyChildren();
-  state.players.forEach(addPlayer);
+  items.findOne(`#${player.id}`)?.destroy();
 };
 
 
 // Crate event handlers
 
 const addCrate = (crate: Crate) => {
-  crates.add(new Konva.Rect({
+  items.add(new Konva.Rect({
     id: crate.id,
     width: cellSize * 0.9,
     height: cellSize * 0.9,
@@ -117,7 +111,7 @@ const addCrate = (crate: Crate) => {
 };
 
 const updateCrate = (crate: Crate) => {
-  const crateObj = crates.findOne<Konva.Rect>(`#${crate.id}`);
+  const crateObj = items.findOne<Konva.Rect>(`#${crate.id}`);
   if (crateObj) {
     crateObj.to({
       x: cellPos(crate.x) - cellSize * 0.45,
@@ -127,17 +121,24 @@ const updateCrate = (crate: Crate) => {
   }
 };
 
-const drawCrates = (state: SokoRoomState) => {
-  crates.destroyChildren();
-  state.crates.forEach(addCrate);
+
+// Bomb event handlers
+
+const addBomb = (bomb: Bomb) => {
+  items.add(new Konva.Circle({
+    id: bomb.id,
+    radius: cellSize * 0.3,
+    x: cellPos(bomb.x),
+    y: cellPos(bomb.y),
+    fill: '#577590',
+  }));
 };
 
 
 // Environmental functions
 
 const drawGrid = (gridWidth: number, gridHeight: number) => {
-  players.visible(false);
-  crates.visible(false);
+  items.visible(false);
   grid.destroyChildren();
   for (let y = 0; y < gridHeight; y += 1) {
     for (let x = 0; x < gridWidth; x += 1) {
@@ -153,8 +154,14 @@ const drawGrid = (gridWidth: number, gridHeight: number) => {
       }));
     }
   }
-  players.visible(true);
-  crates.visible(true);
+  items.visible(true);
+};
+
+const drawItems = (state: SokoRoomState) => {
+  items.destroyChildren();
+  state.players.forEach(addPlayer);
+  state.crates.forEach(addCrate);
+  state.bombs.forEach(addBomb);
 };
 
 const updateSize = (
@@ -175,8 +182,7 @@ const updateSize = (
       offsetY: -cellSize * 0.5,
     });
     drawGrid(state.width, state.height);
-    drawPlayers(state);
-    drawCrates(state);
+    drawItems(state);
   }
 };
 
@@ -195,17 +201,11 @@ export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) =
   });
   stage.add(grid);
 
-  players = new Konva.Layer({
+  items = new Konva.Layer({
     listening: false,
     visible: false,
   });
-  stage.add(players);
-
-  crates = new Konva.Layer({
-    listening: false,
-    visible: false,
-  });
-  stage.add(crates);
+  stage.add(items);
 
   // Set up state events
 
@@ -221,6 +221,10 @@ export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) =
   state.crates.onAdd(crate => {
     addCrate(crate);
     crate.onChange(() => updateCrate(crate));
+  });
+
+  state.bombs.onAdd(bomb => {
+    addBomb(bomb);
   });
 
   // Set up resize observer

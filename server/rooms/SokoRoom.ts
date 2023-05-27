@@ -4,6 +4,8 @@ import { CollectionSchema, MapSchema, Schema, type } from '@colyseus/schema';
 import { v4 as uuid } from 'uuid';
 
 
+// Schemas and types
+
 export type PlayerData = {
   name: string,
   color: string,
@@ -14,7 +16,8 @@ export class Item extends Schema {
   @type('string') id!: string;
   @type('number') x!: number;
   @type('number') y!: number;
-  @type('boolean') pushable!: boolean;
+  @type('boolean') pushable: boolean | undefined;
+  @type('boolean') grabbable: boolean | undefined;
 }
 
 export class Player extends Item {
@@ -27,6 +30,9 @@ export class Player extends Item {
 export class Crate extends Item {
 }
 
+export class Bomb extends Item {
+}
+
 export class Cell extends Schema {
   @type({ collection: Item }) items!: CollectionSchema<Item>;
 }
@@ -37,7 +43,11 @@ export class SokoRoomState extends Schema {
   @type({ map: Cell }) cells!: MapSchema<Cell>;
   @type({ map: Player }) players!: MapSchema<Player>;
   @type({ collection: Crate }) crates!: CollectionSchema<Crate>;
+  @type({ collection: Bomb }) bombs!: CollectionSchema<Bomb>;
 }
+
+
+// Room
 
 /* eslint-disable @typescript-eslint/no-use-before-define */
 export default class SokoRoom extends Room<SokoRoomState> {
@@ -71,6 +81,36 @@ export default class SokoRoom extends Room<SokoRoomState> {
   }
 }
 
+
+// Cell map utilities
+
+const getFreeSpace = (state: SokoRoomState) => {
+  let x = Math.floor(Math.random() * state.width);
+  let y = Math.floor(Math.random() * state.height);
+
+  let tries = 0;
+  while (state.cells.get(`${x},${y}`)!.items.size > 0) {
+    x = Math.floor(Math.random() * state.width);
+    y = Math.floor(Math.random() * state.height);
+    tries += 1;
+    if (tries > 100) {
+      throw new Error('Could not place item.');
+    }
+  }
+
+  return { x, y };
+};
+
+const moveItem = (state: SokoRoomState, item: Item, x: number, y: number) => {
+  state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
+  state.cells.get(`${x},${y}`)?.items.add(item);
+  item.x = x; // eslint-disable-line no-param-reassign
+  item.y = y; // eslint-disable-line no-param-reassign
+};
+
+
+// Initial state
+
 const initState = () => {
   const state = new SokoRoomState({
     width: 20,
@@ -78,6 +118,7 @@ const initState = () => {
     cells: new MapSchema<Cell>(),
     players: new MapSchema<Player>(),
     crates: new CollectionSchema<Crate>(),
+    bombs: new CollectionSchema<Bomb>(),
   });
 
   for (let y = 0; y < state.width; y += 1) {
@@ -88,20 +129,33 @@ const initState = () => {
     }
   }
 
-  const crateCount = 10;
+  const crateCount = 20;
   for (let i = 0; i < crateCount; i += 1) {
     const crate = new Crate({
       id: uuid(),
-      x: Math.floor(Math.random() * state.width),
-      y: Math.floor(Math.random() * state.height),
+      ...getFreeSpace(state),
       pushable: true,
     });
     state.crates.add(crate);
     state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
   }
 
+  const bombCount = 20;
+  for (let i = 0; i < bombCount; i += 1) {
+    const bomb = new Bomb({
+      id: uuid(),
+      ...getFreeSpace(state),
+      grabbable: true,
+    });
+    state.bombs.add(bomb);
+    state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
+  }
+
   return state;
 };
+
+
+// Commands
 
 class AddPlayerCmd extends Command<SokoRoom> {
   execute({ sessionId, playerData }: { sessionId: string, playerData: PlayerData }) {
@@ -110,10 +164,10 @@ class AddPlayerCmd extends Command<SokoRoom> {
       name: playerData.name,
       color: playerData.color,
       imageUrl: playerData.imageUrl,
-      x: Math.floor(Math.random() * this.state.width),
-      y: Math.floor(Math.random() * this.state.height),
+      ...getFreeSpace(this.state),
       rot: Math.floor(Math.random() * 4),
     });
+
     this.state.players.set(sessionId, player);
     this.state.cells.get(`${player.x},${player.y}`)?.items.add(player);
   }
@@ -124,13 +178,6 @@ class RemovePlayerCmd extends Command<SokoRoom> {
     this.state.players.delete(sessionId);
   }
 }
-
-const moveItem = (cells: MapSchema<Cell>, item: Item, x: number, y: number) => {
-  cells.get(`${item.x},${item.y}`)?.items.delete(item);
-  cells.get(`${x},${y}`)?.items.add(item);
-  item.x = x; // eslint-disable-line no-param-reassign
-  item.y = y; // eslint-disable-line no-param-reassign
-};
 
 class MovePlayerCmd extends Command<SokoRoom> {
   dirs = [
@@ -171,10 +218,10 @@ class MovePlayerCmd extends Command<SokoRoom> {
         });
         if (nextItem) return;
 
-        moveItem(this.state.cells, pushable, pux, puy);
+        moveItem(this.state, pushable, pux, puy);
       }
 
-      moveItem(this.state.cells, player, plx, ply);
+      moveItem(this.state, player, plx, ply);
     }
   }
 }
