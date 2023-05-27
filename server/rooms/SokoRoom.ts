@@ -3,13 +3,13 @@ import { Room, Client } from 'colyseus';
 import http from 'http';
 
 import {
-  PlayerData, SokoRoomState, addPlayer, removePlayer, movePlayer,
+  PlayerData, SokoRoomState, initState, addPlayer, removePlayer, movePlayer,
 } from '../lib/sokoServer';
 
 
 export default class SokoRoom extends Room<SokoRoomState> {
   async onCreate(options: any) {
-    this.setState(new SokoRoomState());
+    this.setState(initState());
 
     this.onMessage('move', (client, dir: number) => {
       movePlayer(this.state, client.sessionId, dir);
