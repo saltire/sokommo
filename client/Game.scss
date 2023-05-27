@@ -6,7 +6,7 @@
   flex-direction: column;
   flex-grow: 1;
   align-items: stretch;
-  justify-content: center;
+  height: 100%;
 
   header {
     flex-shrink: 0;
@@ -48,7 +48,7 @@
     flex-grow: 1;
     align-items: center;
     justify-content: center;
-    padding: 15px;
+    overflow: hidden;
   }
 
   footer {

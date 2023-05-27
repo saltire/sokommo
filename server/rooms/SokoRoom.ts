@@ -117,8 +117,8 @@ const moveItem = (state: SokoRoomState, item: Item, x: number, y: number) => {
 
 const initState = () => {
   const state = new SokoRoomState({
-    width: 20,
-    height: 15,
+    width: 40,
+    height: 40,
     cells: new MapSchema<Cell>(),
     players: new MapSchema<Player>(),
     bombs: new MapSchema<Bomb>(),
@@ -134,7 +134,7 @@ const initState = () => {
     }
   }
 
-  const coinCount = 20;
+  const coinCount = 40;
   for (let i = 0; i < coinCount; i += 1) {
     const coin = new Coin({
       id: uuid(),
@@ -144,7 +144,7 @@ const initState = () => {
     state.cells.get(`${coin.x},${coin.y}`)?.items.add(coin);
   }
 
-  const crateCount = 20;
+  const crateCount = 40;
   for (let i = 0; i < crateCount; i += 1) {
     const crate = new Crate({
       id: uuid(),

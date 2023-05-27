@@ -14,8 +14,12 @@ let items: Konva.Layer;
 
 const moveDuration = 0.05;
 
+const clamp = (num: number, min: number, max: number) => Math.max(min, Math.min(max, num));
+
 
 // Cell size
+
+const minViewCells = 20;
 
 const minCellSize = 5;
 const maxCellSize = 60;
@@ -188,25 +192,33 @@ const removeItem = (item: Item) => {
 };
 
 const updateSize = (
-  state: SokoRoomState, viewWidth: number, viewHeight: number,
+  room: Room<SokoRoomState>, viewWidth: number, viewHeight: number,
 ) => {
-  const maxCellWidth = Math.floor((viewWidth - 1) / state.width) - 1;
-  const maxCellHeight = Math.floor((viewHeight - 1) / state.height) - 1;
-  const newCellSize = Math.max(minCellSize, Math.min(maxCellSize,
-    Math.min(maxCellWidth, maxCellHeight)));
+  const maxCellWidth = Math.floor((viewWidth - 1) / minViewCells) - 1;
+  const maxCellHeight = Math.floor((viewHeight - 1) / minViewCells) - 1;
+  cellSize = clamp(Math.min(maxCellWidth, maxCellHeight), minCellSize, maxCellSize);
 
-  if (newCellSize !== cellSize) {
-    cellSize = newCellSize;
+  const player = room.state.players.get(room.sessionId)!;
 
-    stage.setAttrs({
-      width: cellPos(state.width),
-      height: cellPos(state.height),
-      offsetX: -cellSize * 0.5,
-      offsetY: -cellSize * 0.5,
-    });
-    drawGrid(state.width, state.height);
-    drawItems(state);
-  }
+  stage.setAttrs({
+    width: viewWidth,
+    height: viewHeight,
+    offsetX: cellPos(player.x) - (viewWidth / 2),
+    offsetY: cellPos(player.y) - (viewHeight / 2),
+  });
+  drawGrid(room.state.width, room.state.height);
+  drawItems(room.state);
+};
+
+const updateOffset = (player: Player) => {
+  const playerX = cellPos(player.x) - (stage.width() / 2);
+  const playerY = cellPos(player.y) - (stage.height() / 2);
+
+  stage.to({
+    offsetX: clamp(stage.offsetX(), playerX - stage.width() / 6, playerX + stage.width() / 6),
+    offsetY: clamp(stage.offsetY(), playerY - stage.height() / 6, playerY + stage.height() / 6),
+    duration: moveDuration,
+  });
 };
 
 
@@ -243,6 +255,8 @@ export const setupSokoClient = (
 
     if (player.id === room.sessionId) {
       player.listen('coins', coins => updateInfo({ coins }));
+      player.listen('x', () => updateOffset(player));
+      player.listen('y', () => updateOffset(player));
     }
   });
   room.state.players.onRemove(player => {
@@ -273,7 +287,7 @@ export const setupSokoClient = (
       entry.contentBoxSize.forEach(boxSize => {
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
-          updateSize(room.state, boxSize.inlineSize, boxSize.blockSize);
+          updateSize(room, boxSize.inlineSize, boxSize.blockSize);
         }, 200);
       });
     });
