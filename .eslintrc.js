@@ -33,5 +33,4 @@ module.exports = {
     'react/prop-types': 0,
     'react/react-in-jsx-scope': 0,
   },
-  overrides: [{ files: '*.ts' }],
 };

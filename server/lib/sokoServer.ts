@@ -4,12 +4,14 @@ import { Schema, MapSchema, type } from '@colyseus/schema';
 export type PlayerData = {
   name: string,
   color: string,
+  imageUrl?: string,
 };
 
 export class Player extends Schema {
   @type('string') id!: string;
   @type('string') name!: string;
   @type('string') color!: string;
+  @type('string') imageUrl!: string;
   @type('number') x!: number;
   @type('number') y!: number;
   @type('number') rot!: number;
@@ -33,6 +35,7 @@ export const addPlayer = (state: SokoRoomState, sessionId: string, options: Play
     id: sessionId,
     name: options.name,
     color: options.color,
+    imageUrl: options.imageUrl,
     x: Math.floor(Math.random() * state.width),
     y: Math.floor(Math.random() * state.height),
     rot: Math.floor(Math.random() * 4),

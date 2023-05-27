@@ -3,6 +3,7 @@ import axios from 'axios';
 
 import './Login.scss';
 import { PlayerData } from '../server/lib/sokoServer';
+import { DiscordUser } from '../server/routes/api';
 
 
 const colors = ['f94144', 'f3722c', 'f8961e', 'f9c74f', '90be6d', '43aa8b', '577590', '000000'];
@@ -12,58 +13,95 @@ type LoginProps = {
 };
 
 export default function Login({ onLogin }: LoginProps) {
+  const [loaded, setLoaded] = useState(false);
   const [name, setName] = useState('');
   const [color, setColor] = useState(() => colors[Math.floor(Math.random() * colors.length)]);
+  const [user, setUser] = useState<DiscordUser | undefined>(undefined);
 
   useEffect(() => {
-    axios.get<Partial<PlayerData>>('/api/player')
+    if (loaded) {
+      return;
+    }
+
+    axios.get<{ discordUser?: DiscordUser, playerData?: Partial<PlayerData> }>('/api/player')
       .then(({ data }) => {
-        const { name, color } = data;
-        if (name) {
-          setName(name);
+        const { playerData, discordUser } = data;
+        const defaultName = playerData?.name || discordUser?.username;
+        if (defaultName) {
+          setName(defaultName);
         }
-        if (color) {
-          setColor(color);
+        if (playerData?.color) {
+          setColor(playerData.color);
         }
+
+        if (data.discordUser) {
+          setUser(data.discordUser);
+        }
+
+        setLoaded(true);
       })
       .catch(err => console.error('Error getting player data:', err));
   }, []);
 
   const login = useCallback(() => {
-    const playerData = { name, color };
-    axios.post('/api/player', playerData)
+    axios.post('/api/player', { name, color })
       .catch(err => console.error('Error saving player data:', err));
-    onLogin(playerData);
-  }, [name, color]);
+
+    onLogin({ name, color, imageUrl: user?.imageUrl });
+  }, [name, color, user]);
 
   return (
     <div className='Login'>
-      <p>Welcome!</p>
+      {!loaded ? <p>Loading...</p> : (
+        <>
+          <p>Welcome!</p>
 
-      <p>
-        <input
-          type='text'
-          placeholder='Enter your name'
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
-      </p>
+          <div className='discord'>
+            {user ? (
+              <>
+                <p className='discord-user'>
+                  <span>Logged in as: </span>
+                  {user.imageUrl && <img src={user.imageUrl} alt={user.username} />}
+                  <strong>{user.username}</strong>
+                </p>
+                <p><a href='/auth/logout'>Log out</a></p>
+              </>
+            ) : (
+              <p><a href='/auth/login'>Log in to Discord</a></p>
+            )}
+          </div>
 
-      <p className='colors'>
-        {colors.map(c => (
-          <button
-            key={c}
-            type='button'
-            className={c === color ? 'selected' : undefined}
-            style={{ backgroundColor: `#${c}` }}
-            onClick={() => setColor(c)}
-          />
-        ))}
-      </p>
+          <p>
+            Your display name:<br />
+            <input
+              type='text'
+              placeholder='Enter your name'
+              value={name}
+              onChange={e => setName(e.target.value)}
+            />
+          </p>
 
-      <p>
-        <button type='button' disabled={!name.trim()} onClick={login}>Log in</button>
-      </p>
+          <p className='colors'>
+            Pick a color:<br />
+            {colors.map(c => (
+              <button
+                key={c}
+                type='button'
+                title={`Color ${c + 1}`}
+                className={c === color ? 'selected' : undefined}
+                style={{ backgroundColor: `#${c}` }}
+                onClick={() => setColor(c)}
+              >
+                {' '}
+              </button>
+            ))}
+          </p>
+
+          <p>
+            <button type='button' disabled={!name.trim()} onClick={login}>Play!</button>
+          </p>
+        </>
+      )}
     </div>
   );
 }

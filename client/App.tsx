@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { Client, Room } from 'colyseus.js';
 
 import './App.scss';
@@ -18,7 +17,7 @@ export default function App() {
   useEffect(() => {
     if (playerData && !room) {
       client.joinOrCreate<SokoRoomState>('soko_room', playerData)
-        .then(room => setRoom(room))
+        .then(setRoom)
         .catch(err => console.error('Join error:', err));
     }
     else if (!playerData && room) {
@@ -31,7 +30,7 @@ export default function App() {
   return (
     <div className='App'>
       {!playerData ? (
-        <Login onLogin={data => setPlayerData(data)} />
+        <Login onLogin={setPlayerData} />
       ) : (
         !room ? <p>Joining...</p> : <Game room={room} />
       )}

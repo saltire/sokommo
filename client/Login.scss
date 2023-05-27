@@ -3,30 +3,61 @@
   padding: 5px 20px;
   border-radius: 5px;
   background: #f4f4f4;
+  line-height: 1.5rem;
   text-align: center;
 
-  input, button {
+  a, input, button {
     padding: 5px 10px;
-    border: 0;
+    border-style: solid;
     border-radius: 3px;
+    border-color: #333;
     background: white;
+    color: black;
     font-family: inherit;
     font-size: inherit;
     text-align: center;
+    text-decoration: none;
   }
 
-  button {
+  input {
+    border-width: 3px 1px 1px;
+  }
+
+  a, button {
     border-width: 1px 1px 3px;
     border-style: solid;
     border-color: #333;
     cursor: pointer;
 
     &[disabled] {
+      opacity: .5;
       pointer-events: none;
     }
   }
 
+  .discord {
+    margin: 50px 0;
+
+    .discord-user {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      border-radius: 20px;
+      background: white;
+
+      img {
+        width: 30px;
+        height: 30px;
+        margin: 0 5px 0 10px;
+        border-radius: 50%;
+      }
+    }
+  }
+
   .colors {
+    padding-bottom: 10px;
+
     button {
       width: 20px;
       height: 20px;

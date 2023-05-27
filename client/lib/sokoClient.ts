@@ -20,37 +20,74 @@ const cellPos = (cells: number) => cells * (cellSize + 1) + 1;
 // Player event handlers
 
 const addPlayer = (player: Player) => {
-  const group = new Konva.Group({
+  const playerGroup = new Konva.Group({
     id: player.id,
     width: cellSize,
     height: cellSize,
     x: cellPos(player.x),
     y: cellPos(player.y),
-    rotation: player.rot * 90,
   });
 
-  group.add(new Konva.Circle({
-    radius: cellSize * 0.35,
-    fill: `#${player.color}`,
-  }));
+  // Rotating group
 
-  group.add(new Konva.Rect({
+  const playerRotGroup = new Konva.Group({
+    name: 'rot',
+    rotation: player.rot * 90,
+  });
+  playerGroup.add(playerRotGroup);
+
+  playerRotGroup.add(new Konva.Rect({
     width: cellSize * 0.35,
     height: cellSize * 0.35,
     fill: `#${player.color}`,
     rotation: -135,
   }));
 
-  players.add(group);
+  // Non-rotating group
+
+  playerGroup.add(new Konva.Circle({
+    radius: cellSize * 0.35,
+    fill: `#${player.color}`,
+  }));
+
+  // Clip group
+
+  if (player.imageUrl) {
+    const imageGroup = new Konva.Group({
+      clipFunc: ctx => ctx.arc(0, 0, cellSize * 0.3, 0, Math.PI * 2),
+    });
+    playerGroup.add(imageGroup);
+
+    const image = new Image();
+    image.onload = () => {
+      imageGroup.add(new Konva.Image({
+        image,
+        width: cellSize * 0.6,
+        height: cellSize * 0.6,
+        x: -cellSize * 0.3,
+        y: -cellSize * 0.3,
+      }));
+    };
+    image.src = player.imageUrl;
+  }
+
+  players.add(playerGroup);
 };
 
 const updatePlayer = (player: Player) => {
-  players.findOne(`#${player.id}`)?.to({
-    x: cellPos(player.x),
-    y: cellPos(player.y),
-    rotation: player.rot * 90,
-    duration: 0.05,
-  });
+  const playerGroup = players.findOne<Konva.Group>(`#${player.id}`);
+  if (playerGroup) {
+    playerGroup.to({
+      x: cellPos(player.x),
+      y: cellPos(player.y),
+      duration: 0.05,
+    });
+
+    playerGroup.findOne('.rot')?.to({
+      rotation: player.rot * 90,
+      duration: 0.05,
+    });
+  }
 };
 
 const removePlayer = (player: Player) => {
@@ -177,5 +214,5 @@ export const handleInput = (room: Room<SokoRoomState>) => {
 
   return () => {
     document.body.removeEventListener('keyup', onKeyUp);
-  }
+  };
 };

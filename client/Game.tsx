@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Room } from 'colyseus.js';
 
 import './Game.scss';
@@ -15,7 +15,7 @@ export default function Game({ room }: GameProps) {
 
   useEffect(() => {
     if (!grid.current) {
-      return;
+      return undefined;
     }
 
     setupSokoClient(room.state, grid.current);

@@ -8,6 +8,7 @@ import path from 'path';
 
 import { getClient } from './db/client';
 import api from './routes/api';
+import auth from './routes/auth';
 import client from './routes/client';
 // import LifeRoom from './rooms/LifeRoom';
 import SokoRoom from './rooms/SokoRoom';
@@ -28,6 +29,7 @@ const appConfig = config({
     app.use('/colyseus', monitor());
 
     app.use(morgan('dev'));
+    app.set('trust proxy', 1); // Required for session to work when behind a proxy.
     app.use(session({
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 7, // One week
@@ -39,10 +41,12 @@ const appConfig = config({
       store: MongoStore.create({
         clientPromise: getClient(),
         collectionName: 'expresssessions',
+        stringify: false,
       }),
-    }))
+    }));
 
     app.use('/api', api);
+    app.use('/auth', auth);
     app.use('/', client);
 
     app.use(express.static(path.resolve(__dirname, '../static')));
