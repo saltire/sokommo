@@ -36,7 +36,7 @@ const appConfig = config({
         secure: process.env.NODE_ENV === 'production',
       },
       resave: false,
-      saveUninitialized: false,
+      saveUninitialized: true,
       secret: process.env.SESSION_SECRET || 'soko-1234',
       store: MongoStore.create({
         clientPromise: getClient(),
