@@ -1,7 +1,7 @@
 import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
-import { SokoRoomState, Player, Crate } from '../../server/lib/sokoServer';
+import { SokoRoomState, Player, Crate } from '../../server/rooms/SokoRoom';
 
 
 let stage: Konva.Stage;

@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 
 import './Login.scss';
-import { PlayerData } from '../server/lib/sokoServer';
+import { PlayerData } from '../server/rooms/SokoRoom';
 import { DiscordUser } from '../server/routes/api';
 
 
-const colors = ['f94144', 'f3722c', 'f8961e', 'f9c74f', '90be6d', '43aa8b', '577590', '000000'];
+const colors = ['f94144', 'f3722c', 'f8961e', 'f9c74f', '90be6d', '43aa8b', '577590', '333333'];
 
 type LoginProps = {
   onLogin: (data: PlayerData) => void,
@@ -52,6 +52,7 @@ export default function Login({ onLogin }: LoginProps) {
 
   return (
     <div className='Login'>
+      <div className='pretitle'>Everybody knows... a little place like</div>
       <div className='title'>SokoMMO</div>
 
       {!loaded ? <p>Loading...</p> : (

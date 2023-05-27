@@ -3,7 +3,7 @@ import Router from 'express-promise-router';
 
 import { DiscordAuth } from './auth';
 import callApi from '../lib/discordApi';
-import { PlayerData } from '../lib/sokoServer';
+import { PlayerData } from '../rooms/SokoRoom';
 
 
 const router = Router();

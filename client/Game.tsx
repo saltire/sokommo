@@ -3,7 +3,7 @@ import { Room } from 'colyseus.js';
 
 import './Game.scss';
 import { setupSokoClient, handleInput } from './lib/sokoClient';
-import { SokoRoomState } from '../server/lib/sokoServer';
+import { SokoRoomState } from '../server/rooms/SokoRoom';
 
 
 type GameProps = {

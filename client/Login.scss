@@ -8,14 +8,18 @@ $blue: #577590;
 
 .Login {
   margin: auto;
-  padding: 20px;
+  padding: 30px;
   border-radius: 5px;
   background: #f4f4f4;
   line-height: 1.5rem;
   text-align: center;
 
+  .pretitle {
+    opacity: .2;
+  }
+
   .title {
-    margin: 20px 20px 0;
+    margin: 0 20px;
     background: linear-gradient(135deg, $red, $rust, $orange, $yellow, $green, $teal, $blue, $red);
     background-clip: text;
     color: transparent;
@@ -71,7 +75,7 @@ $blue: #577590;
     font-size: 36px;
     font-weight: 700;
     line-height: normal;
-    text-shadow: 0 1px 0 black;
+    text-shadow: 0 1px 0 #333;
   }
 
   .discord {

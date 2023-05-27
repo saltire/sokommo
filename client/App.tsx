@@ -3,7 +3,7 @@ import { Client, Room } from 'colyseus.js';
 
 import './App.scss';
 import Game from './Game';
-import { PlayerData, SokoRoomState } from '../server/lib/sokoServer';
+import { PlayerData, SokoRoomState } from '../server/rooms/SokoRoom';
 import Login from './Login';
 
 

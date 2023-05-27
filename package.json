@@ -21,6 +21,7 @@
     "lint": "npm run eslint && npm run stylelint"
   },
   "dependencies": {
+    "@colyseus/command": "^0.2.1",
     "@colyseus/monitor": "^0.15.1",
     "@colyseus/schema": "^2.0.9",
     "@colyseus/tools": "^0.15.11",
