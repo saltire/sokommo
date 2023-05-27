@@ -6,18 +6,12 @@ import { v4 as uuid } from 'uuid';
 
 // Schemas and types
 
-export type PlayerData = {
-  name: string,
-  color: string,
-  imageUrl?: string,
-};
-
 export class Item extends Schema {
   @type('string') id!: string;
   @type('number') x!: number;
   @type('number') y!: number;
   @type('boolean') pushable: boolean | undefined;
-  @type('boolean') grabbable: boolean | undefined;
+  @type('boolean') solid: boolean | undefined;
 }
 
 export class Player extends Item {
@@ -25,12 +19,21 @@ export class Player extends Item {
   @type('string') color!: string;
   @type('string') imageUrl!: string;
   @type('number') rot!: number;
+  @type('number') coins = 0;
+}
+export type PlayerData = {
+  name: string,
+  color: string,
+  imageUrl?: string,
+};
+
+export class Bomb extends Item {
+}
+
+export class Coin extends Item {
 }
 
 export class Crate extends Item {
-}
-
-export class Bomb extends Item {
 }
 
 export class Cell extends Schema {
@@ -42,8 +45,9 @@ export class SokoRoomState extends Schema {
   @type('number') height!: number;
   @type({ map: Cell }) cells!: MapSchema<Cell>;
   @type({ map: Player }) players!: MapSchema<Player>;
-  @type({ collection: Crate }) crates!: CollectionSchema<Crate>;
   @type({ collection: Bomb }) bombs!: CollectionSchema<Bomb>;
+  @type({ collection: Coin }) coins!: CollectionSchema<Coin>;
+  @type({ collection: Crate }) crates!: CollectionSchema<Crate>;
 }
 
 
@@ -117,8 +121,9 @@ const initState = () => {
     height: 15,
     cells: new MapSchema<Cell>(),
     players: new MapSchema<Player>(),
-    crates: new CollectionSchema<Crate>(),
     bombs: new CollectionSchema<Bomb>(),
+    coins: new CollectionSchema<Coin>(),
+    crates: new CollectionSchema<Crate>(),
   });
 
   for (let y = 0; y < state.width; y += 1) {
@@ -129,27 +134,37 @@ const initState = () => {
     }
   }
 
+  const coinCount = 20;
+  for (let i = 0; i < coinCount; i += 1) {
+    const coin = new Coin({
+      id: uuid(),
+      ...getFreeSpace(state),
+    });
+    state.coins.add(coin);
+    state.cells.get(`${coin.x},${coin.y}`)?.items.add(coin);
+  }
+
   const crateCount = 20;
   for (let i = 0; i < crateCount; i += 1) {
     const crate = new Crate({
       id: uuid(),
       ...getFreeSpace(state),
       pushable: true,
+      solid: true,
     });
     state.crates.add(crate);
     state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
   }
 
-  const bombCount = 20;
-  for (let i = 0; i < bombCount; i += 1) {
-    const bomb = new Bomb({
-      id: uuid(),
-      ...getFreeSpace(state),
-      grabbable: true,
-    });
-    state.bombs.add(bomb);
-    state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
-  }
+  // const bombCount = 20;
+  // for (let i = 0; i < bombCount; i += 1) {
+  //   const bomb = new Bomb({
+  //     id: uuid(),
+  //     ...getFreeSpace(state),
+  //   });
+  //   state.bombs.add(bomb);
+  //   state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
+  // }
 
   return state;
 };
@@ -166,6 +181,7 @@ class AddPlayerCmd extends Command<SokoRoom> {
       imageUrl: playerData.imageUrl,
       ...getFreeSpace(this.state),
       rot: Math.floor(Math.random() * 4),
+      solid: true,
     });
 
     this.state.players.set(sessionId, player);
@@ -175,6 +191,10 @@ class AddPlayerCmd extends Command<SokoRoom> {
 
 class RemovePlayerCmd extends Command<SokoRoom> {
   execute(sessionId: string) {
+    const player = this.state.players.get(sessionId);
+    if (player) {
+      this.state.cells.get(`${player.x},${player.y}`)?.items.delete(player);
+    }
     this.state.players.delete(sessionId);
   }
 }
@@ -198,11 +218,18 @@ class MovePlayerCmd extends Command<SokoRoom> {
       const ply = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
       if (plx === player.x && ply === player.y) return;
 
-      // Check for pushable items.
+      // Check for a pushable item.
       let pushable: Item | undefined;
       this.state.cells.get(`${plx},${ply}`)?.items.forEach(item => {
         if (item.pushable) {
           pushable = item;
+        }
+
+        // Pick up any coins.
+        if (item instanceof Coin) {
+          this.state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
+          this.state.coins.delete(item);
+          player.coins += 1;
         }
       });
       if (pushable) {
@@ -210,13 +237,14 @@ class MovePlayerCmd extends Command<SokoRoom> {
         const puy = Math.max(0, Math.min(this.state.height - 1, pushable.y + dy));
         if (pux === pushable.x && puy === pushable.y) return;
 
-        let nextItem: Item | undefined;
+        // Check for a solid item on the other side.
+        let solidItem: Item | undefined;
         this.state.cells.get(`${pux},${puy}`)?.items.forEach(item => {
-          if (item) {
-            nextItem = item;
+          if (item.solid) {
+            solidItem = item;
           }
         });
-        if (nextItem) return;
+        if (solidItem) return;
 
         moveItem(this.state, pushable, pux, puy);
       }

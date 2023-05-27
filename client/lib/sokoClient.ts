@@ -1,7 +1,7 @@
 import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
-import { SokoRoomState, Bomb, Crate, Player } from '../../server/rooms/SokoRoom';
+import { SokoRoomState, Bomb, Coin, Crate, Item, Player } from '../../server/rooms/SokoRoom';
 
 
 let stage: Konva.Stage;
@@ -92,22 +92,49 @@ const updatePlayer = (player: Player) => {
   }
 };
 
-const removePlayer = (player: Player) => {
-  items.findOne(`#${player.id}`)?.destroy();
+
+// Bomb event handlers
+
+const addBomb = (bomb: Bomb) => {
+  const bombObj = new Konva.Circle({
+    id: bomb.id,
+    radius: cellSize * 0.3,
+    x: cellPos(bomb.x),
+    y: cellPos(bomb.y),
+    fill: '#577590',
+  });
+  items.add(bombObj);
+};
+
+
+// Coin event handlers
+
+const addCoin = (coin: Coin) => {
+  const coinObj = new Konva.Circle({
+    id: coin.id,
+    radius: cellSize * 0.3,
+    x: cellPos(coin.x),
+    y: cellPos(coin.y),
+    fill: '#f9c74f',
+  });
+  items.add(coinObj);
+  coinObj.zIndex(1);
 };
 
 
 // Crate event handlers
 
 const addCrate = (crate: Crate) => {
-  items.add(new Konva.Rect({
+  const crateObj = new Konva.Rect({
     id: crate.id,
     width: cellSize * 0.9,
     height: cellSize * 0.9,
     x: cellPos(crate.x) - cellSize * 0.45,
     y: cellPos(crate.y) - cellSize * 0.45,
     fill: '#f3722c',
-  }));
+  });
+  items.add(crateObj);
+  crateObj.zIndex(0);
 };
 
 const updateCrate = (crate: Crate) => {
@@ -119,19 +146,6 @@ const updateCrate = (crate: Crate) => {
       duration: moveDuration,
     });
   }
-};
-
-
-// Bomb event handlers
-
-const addBomb = (bomb: Bomb) => {
-  items.add(new Konva.Circle({
-    id: bomb.id,
-    radius: cellSize * 0.3,
-    x: cellPos(bomb.x),
-    y: cellPos(bomb.y),
-    fill: '#577590',
-  }));
 };
 
 
@@ -162,6 +176,11 @@ const drawItems = (state: SokoRoomState) => {
   state.players.forEach(addPlayer);
   state.crates.forEach(addCrate);
   state.bombs.forEach(addBomb);
+  state.coins.forEach(addCoin);
+};
+
+const removeItem = (item: Item) => {
+  items.findOne(`#${item.id}`)?.destroy();
 };
 
 const updateSize = (
@@ -211,20 +230,28 @@ export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) =
 
   state.players.onAdd(player => {
     addPlayer(player);
-    player.onChange(() => updatePlayer(player));
+    player.listen('x', () => updatePlayer(player));
+    player.listen('y', () => updatePlayer(player));
+    player.listen('rot', () => updatePlayer(player));
+  });
+  state.players.onRemove(player => {
+    removeItem(player);
   });
 
-  state.players.onRemove(player => {
-    removePlayer(player);
+  state.bombs.onAdd(bomb => {
+    addBomb(bomb);
+  });
+
+  state.coins.onAdd(coin => {
+    addCoin(coin);
+  });
+  state.coins.onRemove(coin => {
+    setTimeout(() => removeItem(coin), moveDuration * 1000);
   });
 
   state.crates.onAdd(crate => {
     addCrate(crate);
     crate.onChange(() => updateCrate(crate));
-  });
-
-  state.bombs.onAdd(bomb => {
-    addBomb(bomb);
   });
 
   // Set up resize observer
