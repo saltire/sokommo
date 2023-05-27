@@ -10,25 +10,31 @@ export type PlayerData = {
   imageUrl?: string,
 };
 
-export class Player extends Schema {
+export class Item extends Schema {
   @type('string') id!: string;
+  @type('number') x!: number;
+  @type('number') y!: number;
+  @type('boolean') pushable!: boolean;
+}
+
+export class Player extends Item {
   @type('string') name!: string;
   @type('string') color!: string;
   @type('string') imageUrl!: string;
-  @type('number') x!: number;
-  @type('number') y!: number;
   @type('number') rot!: number;
 }
 
-export class Crate extends Schema {
-  @type('string') id!: string;
-  @type('number') x!: number;
-  @type('number') y!: number;
+export class Crate extends Item {
+}
+
+export class Cell extends Schema {
+  @type({ collection: Item }) items!: CollectionSchema<Item>;
 }
 
 export class SokoRoomState extends Schema {
   @type('number') width!: number;
   @type('number') height!: number;
+  @type({ map: Cell }) cells!: MapSchema<Cell>;
   @type({ map: Player }) players!: MapSchema<Player>;
   @type({ collection: Crate }) crates!: CollectionSchema<Crate>;
 }
@@ -69,17 +75,29 @@ const initState = () => {
   const state = new SokoRoomState({
     width: 20,
     height: 15,
+    cells: new MapSchema<Cell>(),
     players: new MapSchema<Player>(),
     crates: new CollectionSchema<Crate>(),
   });
 
+  for (let y = 0; y < state.width; y += 1) {
+    for (let x = 0; x < state.width; x += 1) {
+      state.cells.set(`${x},${y}`, new Cell({
+        items: new CollectionSchema<Item>(),
+      }));
+    }
+  }
+
   const crateCount = 10;
   for (let i = 0; i < crateCount; i += 1) {
-    state.crates.add(new Crate({
+    const crate = new Crate({
       id: uuid(),
       x: Math.floor(Math.random() * state.width),
       y: Math.floor(Math.random() * state.height),
-    }));
+      pushable: true,
+    });
+    state.crates.add(crate);
+    state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
   }
 
   return state;
@@ -87,7 +105,7 @@ const initState = () => {
 
 class AddPlayerCmd extends Command<SokoRoom> {
   execute({ sessionId, playerData }: { sessionId: string, playerData: PlayerData }) {
-    this.state.players.set(sessionId, new Player({
+    const player = new Player({
       id: sessionId,
       name: playerData.name,
       color: playerData.color,
@@ -95,7 +113,9 @@ class AddPlayerCmd extends Command<SokoRoom> {
       x: Math.floor(Math.random() * this.state.width),
       y: Math.floor(Math.random() * this.state.height),
       rot: Math.floor(Math.random() * 4),
-    }));
+    });
+    this.state.players.set(sessionId, player);
+    this.state.cells.get(`${player.x},${player.y}`)?.items.add(player);
   }
 }
 
@@ -104,6 +124,13 @@ class RemovePlayerCmd extends Command<SokoRoom> {
     this.state.players.delete(sessionId);
   }
 }
+
+const moveItem = (cells: MapSchema<Cell>, item: Item, x: number, y: number) => {
+  cells.get(`${item.x},${item.y}`)?.items.delete(item);
+  cells.get(`${x},${y}`)?.items.add(item);
+  item.x = x; // eslint-disable-line no-param-reassign
+  item.y = y; // eslint-disable-line no-param-reassign
+};
 
 class MovePlayerCmd extends Command<SokoRoom> {
   dirs = [
@@ -120,37 +147,34 @@ class MovePlayerCmd extends Command<SokoRoom> {
       const dr = (dir - (player.rot % 4) + 4) % 4;
       player.rot += (dr === 3 ? -1 : dr);
 
-      const npx = Math.max(0, Math.min(this.state.width - 1, player.x + dx));
-      const npy = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
-      if (npx === player.x && npy === player.y) return;
+      const plx = Math.max(0, Math.min(this.state.width - 1, player.x + dx));
+      const ply = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
+      if (plx === player.x && ply === player.y) return;
 
-      // Check for crates.
-      // TODO: keep a more efficient map of coords to objects to avoid so much iteration.
-      let crate: Crate | undefined;
-      this.state.crates.forEach(c => {
-        if (c.x === npx && c.y === npy) {
-          crate = c;
+      // Check for pushable items.
+      let pushable: Item | undefined;
+      this.state.cells.get(`${plx},${ply}`)?.items.forEach(item => {
+        if (item.pushable) {
+          pushable = item;
         }
       });
-      if (crate) {
-        const ncx = Math.max(0, Math.min(this.state.width - 1, crate.x + dx));
-        const ncy = Math.max(0, Math.min(this.state.height - 1, crate.y + dy));
-        if (ncx === crate.x && ncy === crate.y) return;
+      if (pushable) {
+        const pux = Math.max(0, Math.min(this.state.width - 1, pushable.x + dx));
+        const puy = Math.max(0, Math.min(this.state.height - 1, pushable.y + dy));
+        if (pux === pushable.x && puy === pushable.y) return;
 
-        let nextCrate: Crate | undefined;
-        this.state.crates.forEach(c => {
-          if (c.x === ncx && c.y === ncy) {
-            nextCrate = c;
+        let nextItem: Item | undefined;
+        this.state.cells.get(`${pux},${puy}`)?.items.forEach(item => {
+          if (item) {
+            nextItem = item;
           }
         });
-        if (nextCrate) return;
+        if (nextItem) return;
 
-        crate.x = ncx;
-        crate.y = ncy;
+        moveItem(this.state.cells, pushable, pux, puy);
       }
 
-      player.x = npx;
-      player.y = npy;
+      moveItem(this.state.cells, player, plx, ply);
     }
   }
 }
