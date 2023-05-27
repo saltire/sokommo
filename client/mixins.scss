@@ -1,0 +1,18 @@
+$red: #f94144;
+$rust: #f3722c;
+$orange: #f8961e;
+$yellow: #f9c74f;
+$green: #90be6d;
+$teal: #43aa8b;
+$blue: #577590;
+
+@mixin title-text {
+  background: linear-gradient(135deg, $red, $rust, $orange, $yellow, $green, $teal, $blue, $red);
+  background-clip: text;
+  color: transparent;
+  font-family: 'Dela Gothic One', sans-serif;
+}
+
+.yellow {
+  color: $yellow;
+}

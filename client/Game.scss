@@ -1,7 +1,62 @@
+@import './mixins';
+
 .Game {
   display: flex;
   box-sizing: border-box;
+  flex-direction: column;
   flex-grow: 1;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
+
+  header {
+    flex-shrink: 0;
+    height: 50px;
+    background: #333;
+    color: white;
+    line-height: 50px;
+    text-align: center;
+
+    .title {
+      @include title-text;
+
+      display: inline-block;
+      font-size: 30px;
+    }
+
+    .right {
+      position: absolute;
+      top: 0;
+      right: 15px;
+      bottom: 0;
+
+      button {
+        padding: 2px 10px;
+        border: 0;
+        border-radius: 3px;
+        background: #999;
+        color: #333;
+        font-family: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .grid-container {
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+  }
+
+  footer {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    background: #333;
+    color: white;
+  }
 }

@@ -1,12 +1,10 @@
-$red: #f94144;
-$rust: #f3722c;
-$orange: #f8961e;
-$yellow: #f9c74f;
-$green: #90be6d;
-$teal: #43aa8b;
-$blue: #577590;
+@import './mixins';
 
 .Login {
+  box-sizing: border-box;
+  width: 450px;
+  max-width: 100%;
+  min-height: 600px;
   margin: auto;
   padding: 30px;
   border-radius: 5px;
@@ -19,11 +17,8 @@ $blue: #577590;
   }
 
   .title {
-    margin: 0 20px;
-    background: linear-gradient(135deg, $red, $rust, $orange, $yellow, $green, $teal, $blue, $red);
-    background-clip: text;
-    color: transparent;
-    font-family: 'Dela Gothic One', sans-serif;
+    @include title-text;
+
     font-size: 60px;
     line-height: 100px;
 

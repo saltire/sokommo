@@ -4,6 +4,10 @@ import Konva from 'konva';
 import { SokoRoomState, Bomb, Coin, Crate, Item, Player } from '../../server/rooms/SokoRoom';
 
 
+export type GameInfo = {
+  coins: number,
+};
+
 let stage: Konva.Stage;
 let grid: Konva.Layer;
 let items: Konva.Layer;
@@ -208,7 +212,10 @@ const updateSize = (
 
 // Initial setup
 
-export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) => {
+export const setupSokoClient = (
+  room: Room<SokoRoomState>, element: HTMLDivElement,
+  updateInfo: (update: Partial<GameInfo>) => void,
+) => {
   // Set up stage and layers
 
   stage = new Konva.Stage({
@@ -228,28 +235,32 @@ export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) =
 
   // Set up state events
 
-  state.players.onAdd(player => {
+  room.state.players.onAdd(player => {
     addPlayer(player);
     player.listen('x', () => updatePlayer(player));
     player.listen('y', () => updatePlayer(player));
     player.listen('rot', () => updatePlayer(player));
+
+    if (player.id === room.sessionId) {
+      player.listen('coins', coins => updateInfo({ coins }));
+    }
   });
-  state.players.onRemove(player => {
+  room.state.players.onRemove(player => {
     removeItem(player);
   });
 
-  state.bombs.onAdd(bomb => {
+  room.state.bombs.onAdd(bomb => {
     addBomb(bomb);
   });
 
-  state.coins.onAdd(coin => {
+  room.state.coins.onAdd(coin => {
     addCoin(coin);
   });
-  state.coins.onRemove(coin => {
+  room.state.coins.onRemove(coin => {
     setTimeout(() => removeItem(coin), moveDuration * 1000);
   });
 
-  state.crates.onAdd(crate => {
+  room.state.crates.onAdd(crate => {
     addCrate(crate);
     crate.onChange(() => updateCrate(crate));
   });
@@ -262,14 +273,14 @@ export const setupSokoClient = (state: SokoRoomState, element: HTMLDivElement) =
       entry.contentBoxSize.forEach(boxSize => {
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
-          updateSize(state, boxSize.inlineSize, boxSize.blockSize);
+          updateSize(room.state, boxSize.inlineSize, boxSize.blockSize);
         }, 200);
       });
     });
   });
 
   // Once we have grid size from state, start triggering draw events on window resize.
-  state.listen('width', () => {
+  room.state.listen('width', () => {
     if (element.parentElement) {
       observer.observe(element.parentElement);
     }

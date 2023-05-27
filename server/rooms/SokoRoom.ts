@@ -45,9 +45,9 @@ export class SokoRoomState extends Schema {
   @type('number') height!: number;
   @type({ map: Cell }) cells!: MapSchema<Cell>;
   @type({ map: Player }) players!: MapSchema<Player>;
-  @type({ collection: Bomb }) bombs!: CollectionSchema<Bomb>;
-  @type({ collection: Coin }) coins!: CollectionSchema<Coin>;
-  @type({ collection: Crate }) crates!: CollectionSchema<Crate>;
+  @type({ map: Bomb }) bombs!: MapSchema<Bomb>;
+  @type({ map: Coin }) coins!: MapSchema<Coin>;
+  @type({ map: Crate }) crates!: MapSchema<Crate>;
 }
 
 
@@ -121,9 +121,9 @@ const initState = () => {
     height: 15,
     cells: new MapSchema<Cell>(),
     players: new MapSchema<Player>(),
-    bombs: new CollectionSchema<Bomb>(),
-    coins: new CollectionSchema<Coin>(),
-    crates: new CollectionSchema<Crate>(),
+    bombs: new MapSchema<Bomb>(),
+    coins: new MapSchema<Coin>(),
+    crates: new MapSchema<Crate>(),
   });
 
   for (let y = 0; y < state.width; y += 1) {
@@ -140,7 +140,7 @@ const initState = () => {
       id: uuid(),
       ...getFreeSpace(state),
     });
-    state.coins.add(coin);
+    state.coins.set(coin.id, coin);
     state.cells.get(`${coin.x},${coin.y}`)?.items.add(coin);
   }
 
@@ -152,7 +152,7 @@ const initState = () => {
       pushable: true,
       solid: true,
     });
-    state.crates.add(crate);
+    state.crates.set(crate.id, crate);
     state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
   }
 
@@ -228,7 +228,7 @@ class MovePlayerCmd extends Command<SokoRoom> {
         // Pick up any coins.
         if (item instanceof Coin) {
           this.state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
-          this.state.coins.delete(item);
+          this.state.coins.delete(item.id);
           player.coins += 1;
         }
       });
