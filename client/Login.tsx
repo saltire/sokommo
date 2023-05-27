@@ -52,10 +52,10 @@ export default function Login({ onLogin }: LoginProps) {
 
   return (
     <div className='Login'>
+      <div className='title'>SokoMMO</div>
+
       {!loaded ? <p>Loading...</p> : (
         <>
-          <p>Welcome!</p>
-
           <div className='discord'>
             {user ? (
               <>
@@ -64,7 +64,7 @@ export default function Login({ onLogin }: LoginProps) {
                   {user.imageUrl && <img src={user.imageUrl} alt={user.username} />}
                   <strong>{user.username}</strong>
                 </p>
-                <p><a href='/auth/logout'>Log out</a></p>
+                <p><a href='/auth/logout'>Log out of Discord</a></p>
               </>
             ) : (
               <p><a href='/auth/login'>Log in to Discord</a></p>
@@ -76,6 +76,7 @@ export default function Login({ onLogin }: LoginProps) {
             <input
               type='text'
               placeholder='Enter your name'
+              required
               value={name}
               onChange={e => setName(e.target.value)}
             />
@@ -98,7 +99,15 @@ export default function Login({ onLogin }: LoginProps) {
           </p>
 
           <p>
-            <button type='button' disabled={!name.trim()} onClick={login}>Play!</button>
+            <button
+              type='button'
+              className='play'
+              style={{ color: `#${color}` }}
+              disabled={!name.trim()}
+              onClick={login}
+            >
+              Play!
+            </button>
           </p>
         </>
       )}
