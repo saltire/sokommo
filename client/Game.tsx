@@ -63,11 +63,19 @@ export default function Game({ room, onQuit }: GameProps) {
         </ul>
       )}
 
-      {info.pickupItem?.pickupName && (
+      {info.heldItem?.itemName && (
+        <div className='inventory'>
+          <img src={pickupImgUrls[info.heldItem.itemName]} alt={info.heldItem.itemName} />
+          <p className='name'><strong>{info.heldItem.itemName}</strong></p>
+          <p>{info.pickupItem ? 'Swap' : 'Drop'}: <strong>E</strong></p>
+        </div>
+      )}
+
+      {info.pickupItem?.itemName && (
         <div className='pickup'>
-          <img src={pickupImgUrls[info.pickupItem.pickupName]} alt={info.pickupItem.pickupName} />
-          <p className='name'><strong>{info.pickupItem.pickupName}</strong></p>
-          {/* <p>Pickup: <strong>E</strong></p> */}
+          <img src={pickupImgUrls[info.pickupItem.itemName]} alt={info.pickupItem.itemName} />
+          <p className='name'><strong>{info.pickupItem.itemName}</strong></p>
+          <p>{info.heldItem ? 'Swap' : 'Pick up'}: <strong>E</strong></p>
         </div>
       )}
 

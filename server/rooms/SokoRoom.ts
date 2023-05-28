@@ -12,7 +12,7 @@ export class Item extends Schema {
   @type('number') y!: number;
   @type('boolean') pushable: boolean | undefined;
   @type('boolean') solid: boolean | undefined;
-  @type('string') pickupName: string | undefined;
+  @type('string') itemName: string | undefined;
 }
 
 export class Player extends Item {
@@ -22,6 +22,7 @@ export class Player extends Item {
   @type('number') rot!: number;
   @type('number') coins = 0;
   @type(Item) pickupItem: Item | undefined;
+  @type(Item) heldItem: Item | undefined;
 }
 export type PlayerData = {
   name: string,
@@ -64,6 +65,10 @@ export default class SokoRoom extends Room<SokoRoomState> {
 
     this.onMessage('move', (client, dir: number) => {
       this.dispatcher.dispatch(new MovePlayerCmd(), { sessionId: client.sessionId, dir });
+    });
+
+    this.onMessage('pickup', client => {
+      this.dispatcher.dispatch(new PickupCmd(), client.sessionId);
     });
   }
 
@@ -141,7 +146,8 @@ const initState = () => {
     const bomb = new Bomb({
       id: uuid(),
       ...getFreeSpace(state),
-      pickupName: 'Bomb',
+      itemName: 'Bomb',
+      solid: true,
     });
     state.bombs.set(bomb.id, bomb);
     state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
@@ -213,57 +219,89 @@ class MovePlayerCmd extends Command<SokoRoom> {
   execute({ sessionId, dir }: { sessionId: string, dir: number }) {
     const [dx, dy] = this.dirs[dir] || [0, 0];
     const player = this.state.players.get(sessionId);
-    if (player && (dx || dy)) {
-      const dr = (dir - (player.rot % 4) + 4) % 4;
-      player.rot += (dr === 3 ? -1 : dr);
+    if (!player || !(dx || dy)) return;
 
-      const plx = Math.max(0, Math.min(this.state.width - 1, player.x + dx));
-      const ply = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
-      if (plx === player.x && ply === player.y) return;
+    const dr = (dir - (player.rot % 4) + 4) % 4;
+    player.rot += (dr === 3 ? -1 : dr);
 
-      // Check for a solid or pushable item.
-      let immovable: Item | undefined;
-      let pushable: Item | undefined;
-      let pickup: Item | undefined;
-      this.state.cells.get(`${plx},${ply}`)?.items.forEach(item => {
-        if (item.pushable) {
-          pushable = item;
-        }
-        // Pick up any coins.
-        else if (item instanceof Coin) {
-          this.state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
-          this.state.coins.delete(item.id);
-          player.coins += 1;
-        }
-        else if (item.solid) {
-          immovable = item;
-        }
-        else if (item.pickupName) {
-          pickup = item;
+    const plx = Math.max(0, Math.min(this.state.width - 1, player.x + dx));
+    const ply = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
+    if (plx === player.x && ply === player.y) return;
+
+    // Check for a solid or pushable item.
+    let immovable: Item | undefined;
+    let pushable: Item | undefined;
+    let pickup: Item | undefined;
+    this.state.cells.get(`${plx},${ply}`)?.items.forEach(item => {
+      if (item.pushable) {
+        pushable = item;
+      }
+      // Pick up any coins.
+      else if (item instanceof Coin) {
+        this.state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
+        this.state.coins.delete(item.id);
+        player.coins += 1;
+      }
+      else if (item.itemName) {
+        pickup = item;
+      }
+      else if (item.solid) {
+        immovable = item;
+      }
+    });
+    if (immovable) return;
+
+    if (pushable) {
+      const pux = Math.max(0, Math.min(this.state.width - 1, pushable.x + dx));
+      const puy = Math.max(0, Math.min(this.state.height - 1, pushable.y + dy));
+      if (pux === pushable.x && puy === pushable.y) return;
+
+      // Check for a solid item on the other side.
+      let solidItem: Item | undefined;
+      this.state.cells.get(`${pux},${puy}`)?.items.forEach(item => {
+        if (item.solid) {
+          solidItem = item;
         }
       });
-      if (immovable) return;
+      if (solidItem) return;
 
-      if (pushable) {
-        const pux = Math.max(0, Math.min(this.state.width - 1, pushable.x + dx));
-        const puy = Math.max(0, Math.min(this.state.height - 1, pushable.y + dy));
-        if (pux === pushable.x && puy === pushable.y) return;
+      moveItem(this.state, pushable, pux, puy);
+    }
 
-        // Check for a solid item on the other side.
-        let solidItem: Item | undefined;
-        this.state.cells.get(`${pux},${puy}`)?.items.forEach(item => {
-          if (item.solid) {
-            solidItem = item;
-          }
-        });
-        if (solidItem) return;
+    moveItem(this.state, player, plx, ply);
 
-        moveItem(this.state, pushable, pux, puy);
+    player.pickupItem = pickup;
+  }
+}
+
+class PickupCmd extends Command<SokoRoom> {
+  execute(sessionId: string) {
+    const player = this.state.players.get(sessionId);
+    if (!player) return;
+
+    const cell = this.state.cells.get(`${player.x},${player.y}`);
+    const alreadyHeldItem = player.heldItem;
+    player.heldItem = undefined;
+
+    // Pick up item, if any.
+    if (player.pickupItem) {
+      if (player.pickupItem instanceof Bomb) {
+        this.state.bombs.delete(player.pickupItem.id);
       }
+      cell?.items.delete(player.pickupItem);
+      player.heldItem = player.pickupItem;
+      player.pickupItem = undefined;
+    }
 
-      moveItem(this.state, player, plx, ply);
-
-      player.pickupItem = pickup;
+    // Put down held item, if any.
+    if (alreadyHeldItem) {
+      if (alreadyHeldItem instanceof Bomb) {
+        this.state.bombs.set(alreadyHeldItem.id, alreadyHeldItem);
+      }
+      alreadyHeldItem.x = player.x;
+      alreadyHeldItem.y = player.y;
+      cell?.items.add(alreadyHeldItem);
+      player.pickupItem = alreadyHeldItem;
     }
   }
 }

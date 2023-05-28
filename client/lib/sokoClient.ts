@@ -14,6 +14,7 @@ export type GameInfo = {
     rank: number,
   })[],
   pickupItem?: Item,
+  heldItem?: Item,
 };
 
 let stage: Konva.Stage;
@@ -343,6 +344,7 @@ export const setupSokoClient = (
       player.listen('y', onMove);
 
       player.listen('pickupItem', pickupItem => updateInfo({ pickupItem }));
+      player.listen('heldItem', heldItem => updateInfo({ heldItem }));
     }
     updatePlayerList();
   });
@@ -351,13 +353,10 @@ export const setupSokoClient = (
     updatePlayerList();
   });
 
-  room.state.bombs.onAdd(bomb => {
-    addBomb(bomb);
-  });
+  room.state.bombs.onAdd(bomb => addBomb(bomb));
+  room.state.bombs.onRemove(bomb => removeItem(bomb));
 
-  room.state.coins.onAdd(coin => {
-    addCoin(coin);
-  });
+  room.state.coins.onAdd(coin => addCoin(coin));
   room.state.coins.onRemove(coin => {
     setTimeout(() => removeItem(coin), moveDuration * 1000);
   });
@@ -399,15 +398,19 @@ export const handleInput = (room: Room<SokoRoomState>) => {
   let interval: any;
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (dir === null && dirKeys.includes(e.key)) {
+    if (dirKeys.includes(e.key) && dir === null) {
       dir = dirKeys.indexOf(e.key);
       room.send('move', dir);
       interval = setInterval(() => room.send('move', dir), moveCooldown);
     }
+
+    if (e.key === 'e') {
+      room.send('pickup');
+    }
   };
 
   const onKeyUp = (e: KeyboardEvent) => {
-    if (dir !== null && dirKeys.includes(e.key) && dir === dirKeys.indexOf(e.key)) {
+    if (dirKeys.includes(e.key) && dir === dirKeys.indexOf(e.key)) {
       clearInterval(interval);
       dir = null;
     }
