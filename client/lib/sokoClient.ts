@@ -14,7 +14,8 @@ let stage: Konva.Stage;
 let grid: Konva.Layer;
 let items: Konva.Layer;
 
-const moveDuration = 0.05;
+const moveDuration = 0.05; // s
+const moveCooldown = 250; // ms
 
 const clamp = (num: number, min: number, max: number) => Math.max(min, Math.min(max, num));
 
@@ -351,15 +352,29 @@ export const setupSokoClient = (
 const dirKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
 
 export const handleInput = (room: Room<SokoRoomState>) => {
-  const onKeyUp = (e: KeyboardEvent) => {
-    if (dirKeys.includes(e.key)) {
-      room.send('move', dirKeys.indexOf(e.key));
+  let dir: number | null = null;
+  let interval: any;
+
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (dir === null && dirKeys.includes(e.key)) {
+      dir = dirKeys.indexOf(e.key);
+      room.send('move', dir);
+      interval = setInterval(() => room.send('move', dir), moveCooldown);
     }
   };
 
+  const onKeyUp = (e: KeyboardEvent) => {
+    if (dir !== null && dirKeys.includes(e.key) && dir === dirKeys.indexOf(e.key)) {
+      clearInterval(interval);
+      dir = null;
+    }
+  };
+
+  document.body.addEventListener('keydown', onKeyDown);
   document.body.addEventListener('keyup', onKeyUp);
 
   return () => {
+    document.body.removeEventListener('keydown', onKeyDown);
     document.body.removeEventListener('keyup', onKeyUp);
   };
 };
