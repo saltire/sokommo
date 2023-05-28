@@ -40,7 +40,9 @@ router.get('/login', async (req, res) => {
 
 router.get('/callback', async (req, res) => {
   if (req.query.state !== getSessionHash(req.sessionID)) {
-    throw new Error('State does not match.');
+    console.error('State does not match.');
+    res.redirect('/');
+    return;
   }
 
   const expiresAt = new Date();
