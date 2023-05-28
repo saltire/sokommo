@@ -44,6 +44,9 @@ export class Crate extends Item {
 export class Explosion extends Item {
 }
 
+export class Wall extends Item {
+}
+
 export class Cell extends Schema {
   @type('number') x!: number;
   @type('number') y!: number;
@@ -59,6 +62,7 @@ export class SokoRoomState extends Schema {
   @type({ map: Coin }) coins!: MapSchema<Coin>;
   @type({ map: Crate }) crates!: MapSchema<Crate>;
   @type({ map: Explosion }) explosions!: MapSchema<Explosion>;
+  @type({ map: Wall }) walls!: MapSchema<Wall>;
 }
 
 
@@ -148,6 +152,7 @@ const initState = () => {
     coins: new MapSchema<Coin>(),
     crates: new MapSchema<Crate>(),
     explosions: new MapSchema<Explosion>(),
+    walls: new MapSchema<Wall>(),
   });
 
   for (let y = 0; y < state.width; y += 1) {
@@ -157,6 +162,33 @@ const initState = () => {
         y,
         items: new CollectionSchema<Item>(),
       }));
+    }
+  }
+
+  const wallCount = 12;
+  const wallMinSize = 2;
+  const wallMaxSize = 5;
+  for (let i = 0; i < wallCount; i += 1) {
+    const { x, y } = getFreeSpace(state);
+    const width = Math.floor(Math.random() * (wallMaxSize - wallMinSize + 1)) + wallMinSize;
+    const height = Math.floor(Math.random() * (wallMaxSize - wallMinSize + 1)) + wallMinSize;
+
+    for (let wy = 0; wy < height; wy += 1) {
+      for (let wx = 0; wx < width; wx += 1) {
+        const cx = x - Math.floor(width / 2) + wx;
+        const cy = y - Math.floor(height / 2) + wy;
+        const cell = state.cells.get(`${cx},${cy}`);
+        if (cell) {
+          const wall = new Wall({
+            id: uuid(),
+            x: cx,
+            y: cy,
+            solid: true,
+          });
+          state.walls.set(wall.id, wall);
+          cell.items.add(wall);
+        }
+      }
     }
   }
 

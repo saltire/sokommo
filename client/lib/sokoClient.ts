@@ -2,13 +2,14 @@ import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
 import {
-  SokoRoomState, Bomb, Coin, Crate, Explosion, Item, Player,
+  SokoRoomState, Bomb, Coin, Crate, Explosion, Item, Player, Wall,
 } from '../../server/rooms/SokoRoom';
 
 import bombSpriteUrl from '../static/bomb-sprite.png';
 import coinImgUrl from '../static/coin.png';
 import crateImgUrl from '../static/crate.png';
 import explosionImgUrl from '../static/explosion.png';
+import wallImgUrl from '../static/wall.png';
 
 
 type PlayerInfo = Pick<Player, 'id' | 'name' | 'color' | 'coins'> & {
@@ -30,6 +31,7 @@ let bombs: Konva.Group;
 let coins: Konva.Group;
 let crates: Konva.Group;
 let players: Konva.Group;
+let walls: Konva.Group;
 
 const moveDuration = 0.075; // s
 const moveCooldown = 250; // ms
@@ -117,7 +119,7 @@ const addPlayer = (player: Player) => {
     image.src = player.imageUrl;
   }
 
-  items.add(playerGroup);
+  players.add(playerGroup);
 };
 
 const updatePlayer = (player: Player) => {
@@ -187,7 +189,7 @@ const coinImg = new Image();
 coinImg.src = coinImgUrl;
 
 const addCoin = (coin: Coin) => {
-  items.add(new Konva.Image({
+  coins.add(new Konva.Image({
     id: coin.id,
     image: coinImg,
     width: cellSize * 0.8,
@@ -204,7 +206,7 @@ const crateImg = new Image();
 crateImg.src = crateImgUrl;
 
 const addCrate = (crate: Crate) => {
-  items.add(new Konva.Image({
+  crates.add(new Konva.Image({
     id: crate.id,
     image: crateImg,
     width: cellSize * 0.9,
@@ -246,6 +248,23 @@ const addExplosion = (explosion: Explosion) => {
 };
 
 
+// Wall event handlers
+
+const wallImg = new Image();
+wallImg.src = wallImgUrl;
+
+const addWall = (wall: Wall) => {
+  walls.add(new Konva.Image({
+    id: wall.id,
+    image: wallImg,
+    width: cellSize,
+    height: cellSize,
+    x: cellPos(wall.x) - cellSize * 0.5,
+    y: cellPos(wall.y) - cellSize * 0.5,
+  }));
+};
+
+
 // Environmental functions
 
 const drawGrid = (gridWidth: number, gridHeight: number) => {
@@ -270,6 +289,8 @@ const drawGrid = (gridWidth: number, gridHeight: number) => {
 
 const createGroups = () => {
   // This will be the sorting order.
+  walls = new Konva.Group();
+  items.add(walls);
   coins = new Konva.Group();
   items.add(coins);
   bombs = new Konva.Group();
@@ -288,6 +309,7 @@ const drawItems = (state: SokoRoomState) => {
   state.coins.forEach(addCoin);
   state.crates.forEach(addCrate);
   state.players.forEach(addPlayer);
+  state.walls.forEach(addWall);
 };
 
 const removeItem = (item: Item) => {
@@ -430,6 +452,8 @@ export const setupSokoClient = (
 
   room.state.explosions.onAdd(explosion => addExplosion(explosion));
   room.state.explosions.onRemove(explosion => removeItem(explosion));
+
+  room.state.walls.onAdd(wall => addWall(wall));
 
   // Set up resize observer
 
