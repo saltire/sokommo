@@ -82,6 +82,10 @@ export default class SokoRoom extends Room<SokoRoomState> {
     this.onMessage('useItem', client => {
       this.dispatcher.dispatch(new UseItemCmd(), client.sessionId);
     });
+
+    this.onMessage('rejoin', (client, playerData: PlayerData) => {
+      this.dispatcher.dispatch(new AddPlayerCmd(), { sessionId: client.sessionId, playerData });
+    });
   }
 
   async onAuth(client: Client) {
@@ -345,16 +349,14 @@ const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
             if (item instanceof Bomb) {
               useBomb(room, eCell, item);
             }
-            else if (item instanceof Coin) {
-              room.state.coins.delete(item.id);
-              eCell.items.delete(item);
-            }
             else if (item instanceof Crate) {
               room.state.crates.delete(item.id);
               eCell.items.delete(item);
             }
-
-            // TODO: kill players
+            else if (item instanceof Player) {
+              room.state.players.delete(item.id);
+              eCell.items.delete(item);
+            }
           });
 
           const explosion = new Explosion({

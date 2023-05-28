@@ -32,7 +32,9 @@ export default function App() {
       {!playerData ? (
         <Login onLogin={setPlayerData} />
       ) : (
-        !room ? <p>Joining...</p> : <Game room={room} onQuit={() => setPlayerData(null)} />
+        !room ? <p className='center'>Joining...</p> : (
+          <Game room={room} playerData={playerData} onQuit={() => setPlayerData(null)} />
+        )
       )}
     </div>
   );

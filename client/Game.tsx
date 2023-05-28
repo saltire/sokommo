@@ -3,7 +3,7 @@ import { Room } from 'colyseus.js';
 
 import './Game.scss';
 import { setupSokoClient, handleInput, GameInfo } from './lib/sokoClient';
-import { SokoRoomState } from '../server/rooms/SokoRoom';
+import { PlayerData, SokoRoomState } from '../server/rooms/SokoRoom';
 
 import bombImgUrl from './static/bomb.png';
 
@@ -14,17 +14,19 @@ const pickupImgUrls: { [index: string]: string } = {
 
 type GameProps = {
   room: Room<SokoRoomState>,
+  playerData: PlayerData,
   onQuit: () => void,
 };
 
-export default function Game({ room, onQuit }: GameProps) {
+export default function Game({ room, playerData, onQuit }: GameProps) {
   const grid = useRef<HTMLDivElement>(null);
 
   const [info, setInfo] = useState<GameInfo>({
     players: [],
   });
-  const updateInfo = useCallback((update: Partial<GameInfo>) => setInfo(
-    prev => ({ ...prev, ...update })), []);
+  const updateInfo = useCallback(
+    (update: Partial<GameInfo> | ((prevInfo: GameInfo) => Partial<GameInfo>)) => setInfo(
+      prev => ({ ...prev, ...typeof update === 'function' ? update(prev) : update })), []);
   const player = useMemo(() => info.players.find(p => p.id === room.sessionId),
     [info.players, room]);
 
@@ -61,6 +63,30 @@ export default function Game({ room, onQuit }: GameProps) {
             </li>
           ))}
         </ul>
+      )}
+
+      {info.deadPlayer && (
+        <div className='dead-player-overlay'>
+          <div className='dead-player'>
+            <h1>You died!</h1>
+
+            <p>Rank: <strong className='orange'>{info.deadPlayer.rank}</strong></p>
+            <p>Coins: <strong className='yellow'>{info.deadPlayer.coins}</strong></p>
+
+            <p>
+              <button
+                type='button'
+                onClick={() => {
+                  room.send('rejoin', playerData);
+                  updateInfo({ deadPlayer: undefined });
+                }}
+              >
+                Play again
+              </button>
+            </p>
+            <p><button type='button' onClick={onQuit}>Quit</button></p>
+          </div>
+        </div>
       )}
 
       {info.heldItem?.itemName && (

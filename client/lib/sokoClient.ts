@@ -12,10 +12,13 @@ import crateImgUrl from '../static/crate.png';
 import explosionImgUrl from '../static/explosion.png';
 
 
+type PlayerInfo = Pick<Player, 'id' | 'name' | 'color' | 'coins'> & {
+  rank: number,
+};
+
 export type GameInfo = {
-  players: (Pick<Player, 'id' | 'name' | 'color' | 'coins'> & {
-    rank: number,
-  })[],
+  players: PlayerInfo[],
+  deadPlayer?: PlayerInfo,
   pickupItem?: Item,
   heldItem?: Item,
 };
@@ -265,6 +268,9 @@ const removeItem = (item: Item) => {
   items.findOne(`#${item.id}`)?.destroy();
 };
 
+let lastPlayerX = 0;
+let lastPlayerY = 0;
+
 const updateSize = (
   room: Room<SokoRoomState>, viewWidth: number, viewHeight: number,
 ) => {
@@ -272,13 +278,17 @@ const updateSize = (
   const maxCellHeight = Math.floor((viewHeight - 1) / minViewCells) - 1;
   cellSize = clamp(Math.min(maxCellWidth, maxCellHeight), minCellSize, maxCellSize);
 
-  const player = room.state.players.get(room.sessionId)!;
+  const player = room.state.players.get(room.sessionId);
+  if (player) {
+    lastPlayerX = player.x;
+    lastPlayerY = player.y;
+  }
 
   stage.setAttrs({
     width: viewWidth,
     height: viewHeight,
-    offsetX: cellPos(player.x) - (viewWidth / 2),
-    offsetY: cellPos(player.y) - (viewHeight / 2),
+    offsetX: cellPos(lastPlayerX) - (viewWidth / 2),
+    offsetY: cellPos(lastPlayerY) - (viewHeight / 2),
   });
   drawGrid(room.state.width, room.state.height);
   drawItems(room.state);
@@ -300,7 +310,7 @@ const updateOffset = (player: Player) => {
 
 export const setupSokoClient = (
   room: Room<SokoRoomState>, element: HTMLDivElement,
-  updateInfo: (update: Partial<GameInfo>) => void,
+  updateInfo: (update: Partial<GameInfo> | ((prevInfo: GameInfo) => Partial<GameInfo>)) => void,
 ) => {
   // Set up stage and layers
 
@@ -367,6 +377,10 @@ export const setupSokoClient = (
     updatePlayerList();
   });
   room.state.players.onRemove(player => {
+    if (player.id === room.sessionId) {
+      updateInfo(prevInfo => ({ deadPlayer: prevInfo.players.find(p => p.id === player.id) }));
+    }
+
     removeItem(player);
     updatePlayerList();
   });

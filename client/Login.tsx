@@ -76,6 +76,7 @@ export default function Login({ onLogin }: LoginProps) {
             Your display name:<br />
             <input
               type='text'
+              style={{ color: `#${color}` }}
               placeholder='Enter your name'
               required
               value={name}
@@ -84,7 +85,7 @@ export default function Login({ onLogin }: LoginProps) {
           </p>
 
           <p className='colors'>
-            Pick a color:<br />
+            Pick a colour:<br />
             {colors.map(c => (
               <button
                 key={c}
