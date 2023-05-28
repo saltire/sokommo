@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 import { Room, Client } from 'colyseus';
 import { Command, Dispatcher } from '@colyseus/command';
 import { CollectionSchema, MapSchema, Schema, type } from '@colyseus/schema';
@@ -44,6 +45,8 @@ export class Explosion extends Item {
 }
 
 export class Cell extends Schema {
+  @type('number') x!: number;
+  @type('number') y!: number;
   @type({ collection: Item }) items!: CollectionSchema<Item>;
 }
 
@@ -124,8 +127,8 @@ const getFreeSpace = (state: SokoRoomState) => {
 const moveItem = (state: SokoRoomState, item: Item, x: number, y: number) => {
   state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
   state.cells.get(`${x},${y}`)?.items.add(item);
-  item.x = x; // eslint-disable-line no-param-reassign
-  item.y = y; // eslint-disable-line no-param-reassign
+  item.x = x;
+  item.y = y;
 };
 
 
@@ -146,6 +149,8 @@ const initState = () => {
   for (let y = 0; y < state.width; y += 1) {
     for (let x = 0; x < state.width; x += 1) {
       state.cells.set(`${x},${y}`, new Cell({
+        x,
+        y,
         items: new CollectionSchema<Item>(),
       }));
     }
@@ -318,10 +323,59 @@ class PickupCmd extends Command<SokoRoom> {
   }
 }
 
-class UseItemCmd extends Command<SokoRoom> {
-  bombTimer = 2000;
-  explosionTimer = 1000;
+const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
+  const bombTimer = 2000;
+  const explosionTimer = 1000;
 
+  bomb.hot = true;
+  bomb.itemName = undefined; // No longer able to pick it up.
+  // TODO: allow items to appear in the pickup window without being actually grabbable,
+  // and prevent dropping more items in the same cell.
+  room.state.bombs.set(bomb.id, bomb);
+
+  room.clock.setTimeout(() => {
+    room.state.bombs.delete(bomb.id);
+    cell.items.delete(bomb);
+
+    for (let ex = cell.x - 1; ex <= cell.x + 1; ex += 1) {
+      for (let ey = cell.y - 1; ey <= cell.y + 1; ey += 1) {
+        const eCell = room.state.cells.get(`${ex},${ey}`);
+        if (eCell) {
+          eCell.items.forEach(item => {
+            if (item instanceof Bomb) {
+              useBomb(room, eCell, item);
+            }
+            else if (item instanceof Coin) {
+              room.state.coins.delete(item.id);
+              eCell.items.delete(item);
+            }
+            else if (item instanceof Crate) {
+              room.state.crates.delete(item.id);
+              eCell.items.delete(item);
+            }
+
+            // TODO: kill players
+          });
+
+          const explosion = new Explosion({
+            id: uuid(),
+            x: ex,
+            y: ey,
+          });
+          room.state.explosions.set(explosion.id, explosion);
+          eCell.items.add(explosion);
+
+          room.clock.setTimeout(() => {
+            room.state.explosions.delete(explosion.id);
+            eCell.items.delete(explosion);
+          }, explosionTimer);
+        }
+      }
+    }
+  }, bombTimer);
+};
+
+class UseItemCmd extends Command<SokoRoom> {
   execute(sessionId: string) {
     const player = this.state.players.get(sessionId);
     if (!player?.heldItem) return;
@@ -331,54 +385,7 @@ class UseItemCmd extends Command<SokoRoom> {
     if (!cell) return;
 
     if (player.heldItem instanceof Bomb) {
-      const bomb = player.heldItem;
-      bomb.hot = true;
-      bomb.itemName = undefined; // No longer able to pick it up.
-      // TODO: allow items to appear in the pickup window without being actually grabbable,
-      // and prevent dropping more items in the same cell.
-      this.state.bombs.set(bomb.id, bomb);
-
-      this.clock.setTimeout(() => {
-        this.state.bombs.delete(bomb.id);
-        cell?.items.delete(bomb);
-
-        for (let ex = x - 1; ex <= x + 1; ex += 1) {
-          for (let ey = y - 1; ey <= y + 1; ey += 1) {
-            const eCell = this.state.cells.get(`${ex},${ey}`);
-            if (eCell) {
-              eCell.items.forEach(item => {
-                if (item instanceof Bomb) {
-                  this.state.bombs.delete(item.id);
-                }
-                else if (item instanceof Coin) {
-                  this.state.coins.delete(item.id);
-                }
-                else if (item instanceof Crate) {
-                  this.state.crates.delete(item.id);
-                }
-
-                // TODO: skip destroying players until we have a game over mechanism.
-                if (!(item instanceof Player)) {
-                  eCell.items.delete(item);
-                }
-              });
-
-              const explosion = new Explosion({
-                id: uuid(),
-                x: ex,
-                y: ey,
-              });
-              this.state.explosions.set(explosion.id, explosion);
-              eCell.items.add(explosion);
-
-              this.clock.setTimeout(() => {
-                this.state.explosions.delete(explosion.id);
-                eCell.items.delete(explosion);
-              }, this.explosionTimer);
-            }
-          }
-        }
-      }, this.bombTimer);
+      useBomb(this.room, cell, player.heldItem);
     }
     player.heldItem.x = player.x;
     player.heldItem.y = player.y;
