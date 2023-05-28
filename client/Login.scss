@@ -4,7 +4,7 @@
   box-sizing: border-box;
   width: 450px;
   max-width: 100%;
-  min-height: 600px;
+  min-height: 700px;
   margin: auto;
   padding: 30px;
   border-radius: 5px;
@@ -27,7 +27,25 @@
     }
   }
 
-  a, input, button {
+  .help {
+    strong {
+      color: $red;
+    }
+
+    em {
+      color: $teal;
+    }
+  }
+
+  a {
+    color: $blue;
+
+    &:visited {
+      color: $purple;
+    }
+  }
+
+  a.button, input, button {
     display: inline-block;
     line-height: inherit;
     text-decoration: none;
@@ -43,7 +61,7 @@
     }
   }
 
-  a, button {
+  a.button, button {
     @include outline-button;
 
     &[disabled] {
