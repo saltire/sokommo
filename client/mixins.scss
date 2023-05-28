@@ -9,6 +9,7 @@ $purple: #955bb3;
 
 @mixin title-text {
   background: linear-gradient(135deg, $red, $rust, $orange, $yellow, $green, $teal, $blue, $purple, $red);
+  -webkit-background-clip: text; // stylelint-disable
   background-clip: text;
   color: transparent;
   font-family: 'Dela Gothic One', sans-serif;
