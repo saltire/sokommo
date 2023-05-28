@@ -451,30 +451,42 @@ export const setupSokoClient = (
 
 // Input handling
 
-const dirKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
+const wasdKeys = ['w', 'd', 's', 'a'];
+const arrowKeys = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
+
+const getDir = (key: string) => {
+  if (wasdKeys.includes(key)) return wasdKeys.indexOf(key);
+  if (arrowKeys.includes(key)) return arrowKeys.indexOf(key);
+  return null;
+};
 
 export const handleInput = (room: Room<SokoRoomState>) => {
   let dir: number | null = null;
   let interval: any;
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (dirKeys.includes(e.key) && dir === null) {
-      dir = dirKeys.indexOf(e.key);
-      room.send('move', dir);
-      interval = setInterval(() => room.send('move', dir), moveCooldown);
-    }
-    else if (e.key === 'e') {
+    if (e.key === 'e') {
       room.send('pickup');
     }
     else if (e.key === 'f') {
       room.send('useItem');
     }
+    else if (dir === null) {
+      const keyDir = getDir(e.key);
+      if (keyDir !== null) {
+        dir = keyDir;
+        room.send('move', dir);
+        interval = setInterval(() => room.send('move', dir), moveCooldown);
+      }
+    }
   };
 
   const onKeyUp = (e: KeyboardEvent) => {
-    if (dirKeys.includes(e.key) && dir === dirKeys.indexOf(e.key)) {
-      clearInterval(interval);
-      dir = null;
+    if (dir !== null) {
+      if (getDir(e.key) === dir) {
+        clearInterval(interval);
+        dir = null;
+      }
     }
   };
 
