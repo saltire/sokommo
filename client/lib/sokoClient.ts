@@ -14,7 +14,7 @@ let stage: Konva.Stage;
 let grid: Konva.Layer;
 let items: Konva.Layer;
 
-const moveDuration = 0.05; // s
+const moveDuration = 0.075; // s
 const moveCooldown = 250; // ms
 
 const clamp = (num: number, min: number, max: number) => Math.max(min, Math.min(max, num));
@@ -22,8 +22,7 @@ const clamp = (num: number, min: number, max: number) => Math.max(min, Math.min(
 
 // Cell size
 
-const minViewCells = 20;
-
+const minViewCells = 16;
 const minCellSize = 5;
 const maxCellSize = 60;
 let cellSize = 30;
@@ -138,39 +137,68 @@ const addBomb = (bomb: Bomb) => {
 // Coin event handlers
 
 const addCoin = (coin: Coin) => {
-  const coinObj = new Konva.Circle({
+  const coinGroup = new Konva.Group({
     id: coin.id,
-    radius: cellSize * 0.3,
     x: cellPos(coin.x),
     y: cellPos(coin.y),
-    fill: '#f9c74f',
   });
-  items.add(coinObj);
-  coinObj.zIndex(1);
+
+  coinGroup.add(new Konva.Circle({
+    id: coin.id,
+    radius: cellSize * 0.3,
+    x: 0,
+    y: cellSize * 0.05,
+    fill: '#f8961e',
+  }));
+  coinGroup.add(new Konva.Circle({
+    id: coin.id,
+    radius: cellSize * 0.3,
+    x: 0,
+    y: -cellSize * 0.05,
+    fill: '#f9c74f',
+  }));
+
+  items.add(coinGroup);
+  coinGroup.zIndex(1);
 };
 
 
 // Crate event handlers
 
 const addCrate = (crate: Crate) => {
-  const crateObj = new Konva.Rect({
+  const crateGroup = new Konva.Group({
     id: crate.id,
+    width: cellSize,
+    height: cellSize,
+    x: cellPos(crate.x),
+    y: cellPos(crate.y),
+  });
+
+  crateGroup.add(new Konva.Rect({
     width: cellSize * 0.9,
     height: cellSize * 0.9,
-    x: cellPos(crate.x) - cellSize * 0.45,
-    y: cellPos(crate.y) - cellSize * 0.45,
+    x: -cellSize * 0.45,
+    y: -cellSize * 0.45,
+    fill: '#f8961e',
+  }));
+  crateGroup.add(new Konva.Rect({
+    width: cellSize * 0.9,
+    height: cellSize * 0.3,
+    x: -cellSize * 0.45,
+    y: cellSize * 0.15,
     fill: '#f3722c',
-  });
-  items.add(crateObj);
-  crateObj.zIndex(0);
+  }));
+
+  items.add(crateGroup);
+  crateGroup.zIndex(0);
 };
 
 const updateCrate = (crate: Crate) => {
   const crateObj = items.findOne<Konva.Rect>(`#${crate.id}`);
   if (crateObj) {
     crateObj.to({
-      x: cellPos(crate.x) - cellSize * 0.45,
-      y: cellPos(crate.y) - cellSize * 0.45,
+      x: cellPos(crate.x),
+      y: cellPos(crate.y),
       duration: moveDuration,
     });
   }
