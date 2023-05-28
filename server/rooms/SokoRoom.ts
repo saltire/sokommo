@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 import { Room, Client } from 'colyseus';
 import { Command, Dispatcher } from '@colyseus/command';
-import { ArraySchema, CollectionSchema, MapSchema, Schema, type } from '@colyseus/schema';
+import { CollectionSchema, MapSchema, Schema, type } from '@colyseus/schema';
 import { v4 as uuid } from 'uuid';
 
 
@@ -86,6 +86,8 @@ export default class SokoRoom extends Room<SokoRoomState> {
   async onCreate() {
     this.setState(initState());
 
+    setupIntervals(this);
+
     this.onMessage('move', (client, dir: number) => {
       this.dispatcher.dispatch(new MovePlayerCmd(), { sessionId: client.sessionId, dir });
     });
@@ -153,6 +155,11 @@ const moveItem = (state: SokoRoomState, item: Item, x: number, y: number) => {
 
 // Initial state
 
+const bombCount = 30;
+const coinCount = 40;
+const crateCount = 40;
+const laserCount = 5;
+
 const initState = () => {
   const state = new SokoRoomState({
     width: 40,
@@ -205,54 +212,109 @@ const initState = () => {
     }
   }
 
-  const bombCount = 40;
   for (let i = 0; i < bombCount; i += 1) {
-    const bomb = new Bomb({
-      id: uuid(),
-      ...getFreeSpace(state),
-      itemName: 'Bomb',
-      solid: true,
-    });
-    state.bombs.set(bomb.id, bomb);
-    state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
+    createBomb(state);
   }
 
-  const coinCount = 40;
   for (let i = 0; i < coinCount; i += 1) {
-    const coin = new Coin({
-      id: uuid(),
-      ...getFreeSpace(state),
-    });
-    state.coins.set(coin.id, coin);
-    state.cells.get(`${coin.x},${coin.y}`)?.items.add(coin);
+    createCoin(state);
   }
 
-  const crateCount = 40;
   for (let i = 0; i < crateCount; i += 1) {
-    const crate = new Crate({
-      id: uuid(),
-      ...getFreeSpace(state),
-      pushable: true,
-      solid: true,
-    });
-    state.crates.set(crate.id, crate);
-    state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
+    createCrate(state);
   }
 
-  const laserCount = 5;
   for (let i = 0; i < laserCount; i += 1) {
-    const laser = new Laser({
-      id: uuid(),
-      ...getFreeSpace(state),
-      beams: new ArraySchema<Beam>(),
-      itemName: 'Laser',
-      solid: true,
-    });
-    state.lasers.set(laser.id, laser);
-    state.cells.get(`${laser.x},${laser.y}`)?.items.add(laser);
+    createLaser(state);
   }
 
   return state;
+};
+
+
+// Item creation
+
+const createBomb = (state: SokoRoomState) => {
+  const bomb = new Bomb({
+    id: uuid(),
+    ...getFreeSpace(state),
+    itemName: 'Bomb',
+    solid: true,
+  });
+  state.bombs.set(bomb.id, bomb);
+  state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
+};
+
+const createCoin = (state: SokoRoomState) => {
+  const coin = new Coin({
+    id: uuid(),
+    ...getFreeSpace(state),
+  });
+  state.coins.set(coin.id, coin);
+  state.cells.get(`${coin.x},${coin.y}`)?.items.add(coin);
+};
+
+const createCrate = (state: SokoRoomState) => {
+  const crate = new Crate({
+    id: uuid(),
+    ...getFreeSpace(state),
+    pushable: true,
+    solid: true,
+  });
+  state.crates.set(crate.id, crate);
+  state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
+};
+
+const createLaser = (state: SokoRoomState) => {
+  const laser = new Laser({
+    id: uuid(),
+    ...getFreeSpace(state),
+    // beams: new ArraySchema<Beam>(),
+    itemName: 'Laser',
+    solid: true,
+  });
+  state.lasers.set(laser.id, laser);
+  state.cells.get(`${laser.x},${laser.y}`)?.items.add(laser);
+};
+
+const createExplosion = (room: SokoRoom, cell: Cell) => {
+  const explosionTimer = 1000;
+
+  const explosion = new Explosion({
+    id: uuid(),
+    x: cell.x,
+    y: cell.y,
+  });
+  room.state.explosions.set(explosion.id, explosion);
+  cell.items.add(explosion);
+
+  room.clock.setTimeout(() => {
+    room.state.explosions.delete(explosion.id);
+    cell.items.delete(explosion);
+  }, explosionTimer);
+};
+
+
+// Periodic tasks
+
+const bombChance = 0.25;
+const coinChance = 0.25;
+const laserChance = 0.1;
+
+const setupIntervals = (room: SokoRoom) => {
+  room.clock.setInterval(() => {
+    if (room.state.bombs.size < bombCount && Math.random() < bombChance) {
+      createBomb(room.state);
+    }
+
+    if (room.state.coins.size < coinCount && Math.random() < coinChance) {
+      createCoin(room.state);
+    }
+
+    if (room.state.lasers.size < laserCount && Math.random() < laserChance) {
+      createLaser(room.state);
+    }
+  }, 1000);
 };
 
 
@@ -417,23 +479,6 @@ class PickupCmd extends Command<SokoRoom> {
     }
   }
 }
-
-const createExplosion = (room: SokoRoom, cell: Cell) => {
-  const explosionTimer = 1000;
-
-  const explosion = new Explosion({
-    id: uuid(),
-    x: cell.x,
-    y: cell.y,
-  });
-  room.state.explosions.set(explosion.id, explosion);
-  cell.items.add(explosion);
-
-  room.clock.setTimeout(() => {
-    room.state.explosions.delete(explosion.id);
-    cell.items.delete(explosion);
-  }, explosionTimer);
-};
 
 const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
   const bombTimer = 2000;

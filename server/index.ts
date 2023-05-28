@@ -15,7 +15,7 @@ import SokoRoom from './rooms/SokoRoom';
 
 
 const appConfig = config({
-  getId: () => 'Your Colyseus App',
+  getId: () => 'SokoMMO',
 
   initializeGameServer: gameServer => {
     // gameServer.define('life_room', LifeRoom);
