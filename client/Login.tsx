@@ -6,7 +6,7 @@ import { PlayerData } from '../server/rooms/SokoRoom';
 import { DiscordUser } from '../server/routes/api';
 
 
-const colors = ['f94144', 'f3722c', 'f8961e', 'f9c74f', '90be6d', '43aa8b', '577590', '333333'];
+const colors = ['f94144', 'f3722c', 'f8961e', 'f9c74f', '90be6d', '43aa8b', '577590', '955bb3', '333333'];
 
 type LoginProps = {
   onLogin: (data: PlayerData) => void,
