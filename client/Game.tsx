@@ -6,10 +6,12 @@ import { setupSokoClient, handleInput, GameInfo } from './lib/sokoClient';
 import { PlayerData, SokoRoomState } from '../server/rooms/SokoRoom';
 
 import bombImgUrl from './static/bomb.png';
+import laserImgUrl from './static/laser.png';
 
 
 const pickupImgUrls: { [index: string]: string } = {
   Bomb: bombImgUrl,
+  Laser: laserImgUrl,
 };
 
 type GameProps = {

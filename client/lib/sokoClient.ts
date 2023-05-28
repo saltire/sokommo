@@ -2,13 +2,15 @@ import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
 import {
-  SokoRoomState, Bomb, Coin, Crate, Explosion, Item, Player, Wall,
+  SokoRoomState, Beam, Bomb, Coin, Crate, Explosion, Item, Laser, Player, Wall,
 } from '../../server/rooms/SokoRoom';
 
+import beamImgUrl from '../static/beam-straight.png';
 import bombSpriteUrl from '../static/bomb-sprite.png';
 import coinImgUrl from '../static/coin.png';
 import crateImgUrl from '../static/crate.png';
 import explosionImgUrl from '../static/explosion.png';
+import laserImgUrl from '../static/laser.png';
 import wallImgUrl from '../static/wall.png';
 
 
@@ -27,9 +29,10 @@ let stage: Konva.Stage;
 let grid: Konva.Layer;
 let items: Konva.Layer;
 
-let bombs: Konva.Group;
+let beams: Konva.Group;
 let coins: Konva.Group;
 let crates: Konva.Group;
+let pickups: Konva.Group;
 let players: Konva.Group;
 let walls: Konva.Group;
 
@@ -53,8 +56,6 @@ const cellPos = (cells: number) => cells * (cellSize + 1) + 1;
 const addPlayer = (player: Player) => {
   const playerGroup = new Konva.Group({
     id: player.id,
-    width: cellSize,
-    height: cellSize,
     x: cellPos(player.x),
     y: cellPos(player.y),
   });
@@ -63,7 +64,7 @@ const addPlayer = (player: Player) => {
 
   const playerRotGroup = new Konva.Group({
     name: 'rot',
-    rotation: player.rot * 90,
+    rotation: (player.rot || 0) * 90,
   });
   playerGroup.add(playerRotGroup);
 
@@ -131,7 +132,7 @@ const updatePlayer = (player: Player) => {
   });
 
   playerGroup?.findOne('.rot')?.to({
-    rotation: player.rot * 90,
+    rotation: (player.rot || 0) * 90,
     duration: moveDuration,
   });
 };
@@ -171,7 +172,7 @@ const addBomb = (bomb: Bomb) => {
   if (bomb.hot) {
     bombObj.start();
   }
-  bombs.add(bombObj);
+  pickups.add(bombObj);
 };
 
 const updateBomb = (bomb: Bomb) => {
@@ -248,6 +249,52 @@ const addExplosion = (explosion: Explosion) => {
 };
 
 
+// Laser event handlers
+
+const laserImg = new Image();
+laserImg.src = laserImgUrl;
+const beamImg = new Image();
+beamImg.src = beamImgUrl;
+
+const addLaser = (laser: Laser) => {
+  const laserGroup = new Konva.Group({
+    id: laser.id,
+    x: cellPos(laser.x),
+    y: cellPos(laser.y),
+    rotation: (laser.rot || 0) * 90,
+  });
+
+  laserGroup.add(new Konva.Image({
+    image: laserImg,
+    width: cellSize * 0.8,
+    height: cellSize * 0.8,
+    x: -cellSize * 0.4,
+    y: -cellSize * 0.4,
+  }));
+
+  pickups.add(laserGroup);
+};
+
+const addBeam = (beam: Beam) => {
+  const beamGroup = new Konva.Group({
+    id: beam.id,
+    x: cellPos(beam.x),
+    y: cellPos(beam.y),
+    rotation: (beam.rot || 0) * 90,
+  });
+
+  beamGroup.add(new Konva.Image({
+    image: beamImg,
+    width: cellSize,
+    height: cellSize,
+    x: -cellSize * 0.5,
+    y: -cellSize * 0.5,
+  }));
+
+  beams.add(beamGroup);
+};
+
+
 // Wall event handlers
 
 const wallImg = new Image();
@@ -293,12 +340,14 @@ const createGroups = () => {
   items.add(walls);
   coins = new Konva.Group();
   items.add(coins);
-  bombs = new Konva.Group();
-  items.add(bombs);
+  pickups = new Konva.Group();
+  items.add(pickups);
   crates = new Konva.Group();
   items.add(crates);
   players = new Konva.Group();
   items.add(players);
+  beams = new Konva.Group();
+  items.add(beams);
 };
 
 const drawItems = (state: SokoRoomState) => {
@@ -308,6 +357,11 @@ const drawItems = (state: SokoRoomState) => {
   state.bombs.forEach(addBomb);
   state.coins.forEach(addCoin);
   state.crates.forEach(addCrate);
+  state.lasers.forEach(laser => {
+    addLaser(laser);
+    // laser.beams.forEach(addBeam);
+  });
+  state.beams.forEach(addBeam);
   state.players.forEach(addPlayer);
   state.walls.forEach(addWall);
 };
@@ -452,6 +506,15 @@ export const setupSokoClient = (
 
   room.state.explosions.onAdd(explosion => addExplosion(explosion));
   room.state.explosions.onRemove(explosion => removeItem(explosion));
+
+  room.state.lasers.onAdd(laser => {
+    addLaser(laser);
+    // laser.beams.onAdd(beam => addBeam(beam));
+    // laser.beams.onRemove(beam => removeItem(beam));
+  });
+  room.state.lasers.onRemove(laser => removeItem(laser));
+  room.state.beams.onAdd(beam => addBeam(beam));
+  room.state.beams.onRemove(beam => removeItem(beam));
 
   room.state.walls.onAdd(wall => addWall(wall));
 

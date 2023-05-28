@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 import { Room, Client } from 'colyseus';
 import { Command, Dispatcher } from '@colyseus/command';
-import { CollectionSchema, MapSchema, Schema, type } from '@colyseus/schema';
+import { ArraySchema, CollectionSchema, MapSchema, Schema, type } from '@colyseus/schema';
 import { v4 as uuid } from 'uuid';
 
 
@@ -11,6 +11,7 @@ export class Item extends Schema {
   @type('string') id!: string;
   @type('number') x!: number;
   @type('number') y!: number;
+  @type('number') rot!: number | undefined;
   @type('boolean') pushable: boolean | undefined;
   @type('boolean') solid: boolean | undefined;
   @type('string') itemName: string | undefined;
@@ -20,7 +21,6 @@ export class Player extends Item {
   @type('string') name!: string;
   @type('string') color!: string;
   @type('string') imageUrl!: string;
-  @type('number') rot!: number;
   @type('number') coins = 0;
   @type(Item) pickupItem: Item | undefined;
   @type(Item) heldItem: Item | undefined;
@@ -30,6 +30,10 @@ export type PlayerData = {
   color: string,
   imageUrl?: string,
 };
+
+export class Beam extends Item {
+  @type('string') laserId!: string;
+}
 
 export class Bomb extends Item {
   @type('boolean') hot: boolean | undefined;
@@ -42,6 +46,11 @@ export class Crate extends Item {
 }
 
 export class Explosion extends Item {
+}
+
+export class Laser extends Item {
+  @type('boolean') firing: boolean | undefined;
+  // @type({ array: Beam }) beams!: ArraySchema<Beam>;
 }
 
 export class Wall extends Item {
@@ -58,10 +67,12 @@ export class SokoRoomState extends Schema {
   @type('number') height!: number;
   @type({ map: Cell }) cells!: MapSchema<Cell>;
   @type({ map: Player }) players!: MapSchema<Player>;
+  @type({ map: Beam }) beams!: MapSchema<Beam>;
   @type({ map: Bomb }) bombs!: MapSchema<Bomb>;
   @type({ map: Coin }) coins!: MapSchema<Coin>;
   @type({ map: Crate }) crates!: MapSchema<Crate>;
   @type({ map: Explosion }) explosions!: MapSchema<Explosion>;
+  @type({ map: Laser }) lasers!: MapSchema<Laser>;
   @type({ map: Wall }) walls!: MapSchema<Wall>;
 }
 
@@ -148,10 +159,12 @@ const initState = () => {
     height: 40,
     cells: new MapSchema<Cell>(),
     players: new MapSchema<Player>(),
+    beams: new MapSchema<Beam>(),
     bombs: new MapSchema<Bomb>(),
     coins: new MapSchema<Coin>(),
     crates: new MapSchema<Crate>(),
     explosions: new MapSchema<Explosion>(),
+    lasers: new MapSchema<Laser>(),
     walls: new MapSchema<Wall>(),
   });
 
@@ -226,6 +239,19 @@ const initState = () => {
     state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
   }
 
+  const laserCount = 5;
+  for (let i = 0; i < laserCount; i += 1) {
+    const laser = new Laser({
+      id: uuid(),
+      ...getFreeSpace(state),
+      beams: new ArraySchema<Beam>(),
+      itemName: 'Laser',
+      solid: true,
+    });
+    state.lasers.set(laser.id, laser);
+    state.cells.get(`${laser.x},${laser.y}`)?.items.add(laser);
+  }
+
   return state;
 };
 
@@ -259,21 +285,21 @@ class RemovePlayerCmd extends Command<SokoRoom> {
   }
 }
 
-class MovePlayerCmd extends Command<SokoRoom> {
-  dirs = [
-    [0, -1], // N
-    [1, 0], //  E
-    [0, 1], //  S
-    [-1, 0], // W
-  ];
+const dirs = [
+  [0, -1], // N
+  [1, 0], //  E
+  [0, 1], //  S
+  [-1, 0], // W
+];
 
+class MovePlayerCmd extends Command<SokoRoom> {
   execute({ sessionId, dir }: { sessionId: string, dir: number }) {
-    const [dx, dy] = this.dirs[dir] || [0, 0];
+    const [dx, dy] = dirs[dir] || [0, 0];
     const player = this.state.players.get(sessionId);
     if (!player || !(dx || dy)) return;
 
-    const dr = (dir - (player.rot % 4) + 4) % 4;
-    player.rot += (dr === 3 ? -1 : dr);
+    const dr = (dir - ((player.rot || 0) % 4) + 4) % 4;
+    player.rot = (player.rot || 0) + (dr === 3 ? -1 : dr);
 
     const plx = player.x + dx;
     const ply = player.y + dy;
@@ -284,7 +310,11 @@ class MovePlayerCmd extends Command<SokoRoom> {
     let immovable: Item | undefined;
     let pushable: Item | undefined;
     let pickup: Item | undefined;
+    let beam: Beam | undefined;
     cell.items.forEach(item => {
+      if (item instanceof Beam) {
+        beam = item;
+      }
       if (item.pushable) {
         pushable = item;
       }
@@ -324,6 +354,13 @@ class MovePlayerCmd extends Command<SokoRoom> {
     moveItem(this.state, player, plx, ply);
 
     player.pickupItem = pickup;
+
+    if (beam) {
+      // Kill player.
+      this.state.players.delete(player.id);
+      cell.items.delete(player);
+      createExplosion(this.room, cell);
+    }
   }
 }
 
@@ -341,6 +378,24 @@ class PickupCmd extends Command<SokoRoom> {
       if (player.pickupItem instanceof Bomb) {
         this.state.bombs.delete(player.pickupItem.id);
       }
+      else if (player.pickupItem instanceof Laser) {
+        player.pickupItem.firing = false;
+        const laserId = player.pickupItem.id;
+        // const beams: Beam[] = [];
+        // this.state.beams.forEach(beam => {
+        //   if (beam.laserId === laserId) {
+        //     beams.push(beam);
+        //   }
+        // });
+        this.state.beams.forEach(beam => {
+          if (beam.laserId === laserId) {
+            this.state.cells.get(`${beam.x},${beam.y}`)?.items.delete(beam);
+            this.state.beams.delete(beam.id);
+          }
+        });
+        // player.pickupItem.beams.clear();
+        this.state.lasers.delete(player.pickupItem.id);
+      }
       cell?.items.delete(player.pickupItem);
       player.heldItem = player.pickupItem;
       player.pickupItem = undefined;
@@ -351,6 +406,10 @@ class PickupCmd extends Command<SokoRoom> {
       if (alreadyHeldItem instanceof Bomb) {
         this.state.bombs.set(alreadyHeldItem.id, alreadyHeldItem);
       }
+      else if (alreadyHeldItem instanceof Laser) {
+        alreadyHeldItem.rot = 0;
+        this.state.lasers.set(alreadyHeldItem.id, alreadyHeldItem);
+      }
       alreadyHeldItem.x = player.x;
       alreadyHeldItem.y = player.y;
       cell?.items.add(alreadyHeldItem);
@@ -359,9 +418,25 @@ class PickupCmd extends Command<SokoRoom> {
   }
 }
 
+const createExplosion = (room: SokoRoom, cell: Cell) => {
+  const explosionTimer = 1000;
+
+  const explosion = new Explosion({
+    id: uuid(),
+    x: cell.x,
+    y: cell.y,
+  });
+  room.state.explosions.set(explosion.id, explosion);
+  cell.items.add(explosion);
+
+  room.clock.setTimeout(() => {
+    room.state.explosions.delete(explosion.id);
+    cell.items.delete(explosion);
+  }, explosionTimer);
+};
+
 const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
   const bombTimer = 2000;
-  const explosionTimer = 1000;
 
   bomb.hot = true;
   bomb.itemName = undefined; // No longer able to pick it up.
@@ -377,6 +452,7 @@ const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
       for (let ey = cell.y - 1; ey <= cell.y + 1; ey += 1) {
         const eCell = room.state.cells.get(`${ex},${ey}`);
         if (eCell) {
+          // Define how the explosion affects other items.
           eCell.items.forEach(item => {
             if (item instanceof Bomb) {
               useBomb(room, eCell, item);
@@ -385,28 +461,73 @@ const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
               room.state.crates.delete(item.id);
               eCell.items.delete(item);
             }
+            else if (item instanceof Laser) {
+              room.state.lasers.delete(item.id);
+              eCell.items.delete(item);
+            }
             else if (item instanceof Player) {
               room.state.players.delete(item.id);
               eCell.items.delete(item);
             }
           });
 
-          const explosion = new Explosion({
-            id: uuid(),
-            x: ex,
-            y: ey,
-          });
-          room.state.explosions.set(explosion.id, explosion);
-          eCell.items.add(explosion);
-
-          room.clock.setTimeout(() => {
-            room.state.explosions.delete(explosion.id);
-            eCell.items.delete(explosion);
-          }, explosionTimer);
+          createExplosion(room, eCell);
         }
       }
     }
   }, bombTimer);
+};
+
+const fireBeams = (room: SokoRoom, laser: Laser) => {
+  let { x, y } = laser;
+  const dir = laser.rot || 0; // TODO: make mutable if beam can be redirected.
+  const [dx, dy] = dirs[dir] || [0, 0];
+  let count = 0;
+  do {
+    x += dx;
+    y += dy;
+    const cell = room.state.cells.get(`${x},${y}`);
+    if (!cell) break;
+
+    let solidItem: Item | undefined;
+    cell.items.forEach(item => {
+      if (item instanceof Bomb) {
+        useBomb(room, cell, item);
+      }
+      else if (item instanceof Player) {
+        room.state.players.delete(item.id);
+        cell.items.delete(item);
+        createExplosion(room, cell);
+      }
+      else if (item.solid) {
+        solidItem = item;
+      }
+    });
+    if (solidItem) break;
+
+    const beam = new Beam({
+      id: uuid(),
+      laserId: laser.id,
+      x,
+      y,
+      rot: dir,
+    });
+    // laser.beams.push(beam);
+    room.state.beams.set(beam.id, beam);
+    cell.items.add(beam);
+
+    count += 1;
+  }
+  while (count < 100);
+};
+
+const useLaser = (room: SokoRoom, player: Player, laser: Laser) => {
+  laser.firing = true;
+  laser.rot = ((player.rot || 0) + 400) % 4;
+  player.pickupItem = laser;
+  room.state.lasers.set(laser.id, laser);
+
+  fireBeams(room, laser);
 };
 
 class UseItemCmd extends Command<SokoRoom> {
@@ -418,12 +539,16 @@ class UseItemCmd extends Command<SokoRoom> {
     const cell = this.state.cells.get(`${x},${y}`);
     if (!cell) return;
 
+    player.heldItem.x = player.x;
+    player.heldItem.y = player.y;
+    cell.items.add(player.heldItem);
     if (player.heldItem instanceof Bomb) {
       useBomb(this.room, cell, player.heldItem);
     }
-    player.heldItem.x = player.x;
-    player.heldItem.y = player.y;
-    cell?.items.add(player.heldItem);
+    else if (player.heldItem instanceof Laser) {
+      player.heldItem.rot = player.rot;
+      useLaser(this.room, player, player.heldItem);
+    }
     player.heldItem = undefined;
   }
 }
