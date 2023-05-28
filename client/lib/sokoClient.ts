@@ -5,8 +5,7 @@ import {
   SokoRoomState, Bomb, Coin, Crate, Explosion, Item, Player,
 } from '../../server/rooms/SokoRoom';
 
-import bombImgUrl from '../static/bomb.png';
-import bombHotImgUrl from '../static/bomb-hot.png';
+import bombSpriteUrl from '../static/bomb-sprite.png';
 import coinImgUrl from '../static/coin.png';
 import crateImgUrl from '../static/crate.png';
 import explosionImgUrl from '../static/explosion.png';
@@ -138,25 +137,47 @@ const updatePlayer = (player: Player) => {
 
 // Bomb event handlers
 
-const bombImg = new Image();
-bombImg.src = bombImgUrl;
-const bombHotImg = new Image();
-bombHotImg.src = bombHotImgUrl;
+const bombSprite = new Image();
+bombSprite.src = bombSpriteUrl;
 
 const addBomb = (bomb: Bomb) => {
-  bombs.add(new Konva.Image({
+  const bombObj = new Konva.Sprite({
     id: bomb.id,
-    image: bomb.hot ? bombHotImg : bombImg,
+    scaleX: (cellSize * 0.8) / 64,
+    scaleY: (cellSize * 0.8) / 64,
     width: cellSize * 0.8,
     height: cellSize * 0.8,
     x: cellPos(bomb.x) - cellSize * 0.4,
     y: cellPos(bomb.y) - cellSize * 0.4,
-  }));
+    image: bombSprite,
+    animation: bomb.hot ? 'hot' : 'cold',
+    animations: {
+      cold: [
+        0, 0, 64, 64,
+      ],
+      hot: [
+        64, 0, 64, 64,
+        128, 0, 64, 64,
+        192, 0, 64, 64,
+        256, 0, 64, 64,
+        192, 0, 64, 64,
+        128, 0, 64, 64,
+      ],
+    },
+    frameRate: 10,
+  });
+  if (bomb.hot) {
+    bombObj.start();
+  }
+  bombs.add(bombObj);
 };
 
 const updateBomb = (bomb: Bomb) => {
-  const bombObj = items.findOne<Konva.Image>(`#${bomb.id}`);
-  bombObj?.image(bomb.hot ? bombHotImg : bombImg);
+  const bombObj = items.findOne<Konva.Sprite>(`#${bomb.id}`);
+  bombObj?.animation(bomb.hot ? 'hot' : 'cold');
+  if (bomb.hot) {
+    bombObj?.start();
+  }
 };
 
 
