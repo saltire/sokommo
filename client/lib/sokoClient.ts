@@ -3,6 +3,11 @@ import Konva from 'konva';
 
 import { SokoRoomState, Bomb, Coin, Crate, Item, Player } from '../../server/rooms/SokoRoom';
 
+import bombImgUrl from '../static/bomb.png';
+import bombHotImgUrl from '../static/bomb-hot.png';
+import coinImgUrl from '../static/coin.png';
+import crateImgUrl from '../static/crate.png';
+
 
 export type GameInfo = {
   players: (Pick<Player, 'id' | 'name' | 'color' | 'coins'> & {
@@ -13,6 +18,11 @@ export type GameInfo = {
 let stage: Konva.Stage;
 let grid: Konva.Layer;
 let items: Konva.Layer;
+
+let bombs: Konva.Group;
+let coins: Konva.Group;
+let crates: Konva.Group;
+let players: Konva.Group;
 
 const moveDuration = 0.075; // s
 const moveCooldown = 250; // ms
@@ -122,83 +132,65 @@ const updatePlayer = (player: Player) => {
 
 // Bomb event handlers
 
+const bombImg = new Image();
+bombImg.src = bombImgUrl;
+const bombHotImg = new Image();
+bombHotImg.src = bombHotImgUrl;
+
 const addBomb = (bomb: Bomb) => {
-  const bombObj = new Konva.Circle({
+  const bombObj = new Konva.Image({
     id: bomb.id,
-    radius: cellSize * 0.3,
-    x: cellPos(bomb.x),
-    y: cellPos(bomb.y),
-    fill: '#577590',
+    image: bombImg,
+    width: cellSize * 0.8,
+    height: cellSize * 0.8,
+    x: cellPos(bomb.x) - cellSize * 0.4,
+    y: cellPos(bomb.y) - cellSize * 0.4,
   });
-  items.add(bombObj);
+  bombs.add(bombObj);
 };
 
 
 // Coin event handlers
 
+const coinImg = new Image();
+coinImg.src = coinImgUrl;
+
 const addCoin = (coin: Coin) => {
-  const coinGroup = new Konva.Group({
+  const coinObj = new Konva.Image({
     id: coin.id,
-    x: cellPos(coin.x),
-    y: cellPos(coin.y),
+    image: coinImg,
+    width: cellSize * 0.8,
+    height: cellSize * 0.8,
+    x: cellPos(coin.x) - cellSize * 0.4,
+    y: cellPos(coin.y) - cellSize * 0.4,
   });
-
-  coinGroup.add(new Konva.Circle({
-    id: coin.id,
-    radius: cellSize * 0.3,
-    x: 0,
-    y: cellSize * 0.05,
-    fill: '#f8961e',
-  }));
-  coinGroup.add(new Konva.Circle({
-    id: coin.id,
-    radius: cellSize * 0.3,
-    x: 0,
-    y: -cellSize * 0.05,
-    fill: '#f9c74f',
-  }));
-
-  items.add(coinGroup);
-  coinGroup.zIndex(1);
+  items.add(coinObj);
 };
 
 
 // Crate event handlers
 
-const addCrate = (crate: Crate) => {
-  const crateGroup = new Konva.Group({
-    id: crate.id,
-    width: cellSize,
-    height: cellSize,
-    x: cellPos(crate.x),
-    y: cellPos(crate.y),
-  });
+const crateImg = new Image();
+crateImg.src = crateImgUrl;
 
-  crateGroup.add(new Konva.Rect({
+const addCrate = (crate: Crate) => {
+  const crateObj = new Konva.Image({
+    id: crate.id,
+    image: crateImg,
     width: cellSize * 0.9,
     height: cellSize * 0.9,
-    x: -cellSize * 0.45,
-    y: -cellSize * 0.45,
-    fill: '#f8961e',
-  }));
-  crateGroup.add(new Konva.Rect({
-    width: cellSize * 0.9,
-    height: cellSize * 0.3,
-    x: -cellSize * 0.45,
-    y: cellSize * 0.15,
-    fill: '#f3722c',
-  }));
-
-  items.add(crateGroup);
-  crateGroup.zIndex(0);
+    x: cellPos(crate.x) - cellSize * 0.45,
+    y: cellPos(crate.y) - cellSize * 0.45,
+  });
+  items.add(crateObj);
 };
 
 const updateCrate = (crate: Crate) => {
   const crateObj = items.findOne<Konva.Rect>(`#${crate.id}`);
   if (crateObj) {
     crateObj.to({
-      x: cellPos(crate.x),
-      y: cellPos(crate.y),
+      x: cellPos(crate.x) - cellSize * 0.45,
+      y: cellPos(crate.y) - cellSize * 0.45,
       duration: moveDuration,
     });
   }
@@ -227,12 +219,26 @@ const drawGrid = (gridWidth: number, gridHeight: number) => {
   items.visible(true);
 };
 
+const createGroups = () => {
+  // This will be the sorting order.
+  coins = new Konva.Group();
+  items.add(coins);
+  bombs = new Konva.Group();
+  items.add(bombs);
+  crates = new Konva.Group();
+  items.add(crates);
+  players = new Konva.Group();
+  items.add(players);
+};
+
 const drawItems = (state: SokoRoomState) => {
   items.destroyChildren();
-  state.players.forEach(addPlayer);
-  state.crates.forEach(addCrate);
+  createGroups();
+
   state.bombs.forEach(addBomb);
   state.coins.forEach(addCoin);
+  state.crates.forEach(addCrate);
+  state.players.forEach(addPlayer);
 };
 
 const removeItem = (item: Item) => {
@@ -292,6 +298,8 @@ export const setupSokoClient = (
     visible: false,
   });
   stage.add(items);
+
+  createGroups();
 
   // Set up state events
 

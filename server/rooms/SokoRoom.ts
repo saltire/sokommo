@@ -156,15 +156,15 @@ const initState = () => {
     state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
   }
 
-  // const bombCount = 20;
-  // for (let i = 0; i < bombCount; i += 1) {
-  //   const bomb = new Bomb({
-  //     id: uuid(),
-  //     ...getFreeSpace(state),
-  //   });
-  //   state.bombs.add(bomb);
-  //   state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
-  // }
+  const bombCount = 40;
+  for (let i = 0; i < bombCount; i += 1) {
+    const bomb = new Bomb({
+      id: uuid(),
+      ...getFreeSpace(state),
+    });
+    state.bombs.set(bomb.id, bomb);
+    state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
+  }
 
   return state;
 };
@@ -218,20 +218,25 @@ class MovePlayerCmd extends Command<SokoRoom> {
       const ply = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
       if (plx === player.x && ply === player.y) return;
 
-      // Check for a pushable item.
+      // Check for a solid or pushable item.
+      let immovable: Item | undefined;
       let pushable: Item | undefined;
       this.state.cells.get(`${plx},${ply}`)?.items.forEach(item => {
         if (item.pushable) {
           pushable = item;
         }
-
         // Pick up any coins.
-        if (item instanceof Coin) {
+        else if (item instanceof Coin) {
           this.state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
           this.state.coins.delete(item.id);
           player.coins += 1;
         }
+        else if (item.solid) {
+          immovable = item;
+        }
       });
+      if (immovable) return;
+
       if (pushable) {
         const pux = Math.max(0, Math.min(this.state.width - 1, pushable.x + dx));
         const puy = Math.max(0, Math.min(this.state.height - 1, pushable.y + dy));
