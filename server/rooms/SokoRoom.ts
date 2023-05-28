@@ -497,6 +497,7 @@ const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
               eCell.items.delete(item);
             }
             else if (item instanceof Laser) {
+              removeBeams(room, item);
               room.state.lasers.delete(item.id);
               eCell.items.delete(item);
             }
@@ -510,6 +511,8 @@ const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
         }
       }
     }
+
+    recalculateBeams(room);
   }, bombTimer);
 };
 
