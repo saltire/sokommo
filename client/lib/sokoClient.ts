@@ -5,7 +5,9 @@ import { SokoRoomState, Bomb, Coin, Crate, Item, Player } from '../../server/roo
 
 
 export type GameInfo = {
-  coins: number,
+  players: (Pick<Player, 'id' | 'name' | 'color' | 'coins'> & {
+    rank: number,
+  })[],
 };
 
 let stage: Konva.Stage;
@@ -58,6 +60,23 @@ const addPlayer = (player: Player) => {
   playerGroup.add(new Konva.Circle({
     radius: cellSize * 0.35,
     fill: `#${player.color}`,
+  }));
+
+  playerGroup.add(new Konva.Text({
+    text: player.name,
+    fontFamily: 'Figtree',
+    fontSize: 15,
+    fontStyle: 'bold',
+    align: 'center',
+    x: -cellSize * 1.5,
+    y: -cellSize * 0.8,
+    width: cellSize * 3,
+    height: cellSize * 0.5,
+    fill: `#${player.color}`,
+    stroke: 'white',
+    strokeWidth: 5,
+    lineJoin: 'round',
+    fillAfterStrokeEnabled: true,
   }));
 
   // Clip group
@@ -247,6 +266,29 @@ export const setupSokoClient = (
 
   // Set up state events
 
+  const updatePlayerList = () => {
+    const playerList = Array.from(room.state.players.values())
+      .map(player => ({
+        id: player.id,
+        name: player.name,
+        color: player.color,
+        coins: player.coins,
+      }))
+      .sort((a, b) => b.coins - a.coins
+        || (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1))
+      .map((player, i) => ({
+        ...player,
+        rank: i + 1,
+      }));
+
+    updateInfo({
+      players: playerList.map((player, i) => ({
+        ...player,
+        rank: player.coins === playerList[i - 1]?.coins ? playerList[i - 1].rank : player.rank,
+      })),
+    });
+  };
+
   room.state.players.onAdd(player => {
     addPlayer(player);
     player.listen('x', () => updatePlayer(player));
@@ -254,13 +296,15 @@ export const setupSokoClient = (
     player.listen('rot', () => updatePlayer(player));
 
     if (player.id === room.sessionId) {
-      player.listen('coins', coins => updateInfo({ coins }));
+      player.listen('coins', () => updatePlayerList());
       player.listen('x', () => updateOffset(player));
       player.listen('y', () => updateOffset(player));
     }
+    updatePlayerList();
   });
   room.state.players.onRemove(player => {
     removeItem(player);
+    updatePlayerList();
   });
 
   room.state.bombs.onAdd(bomb => {

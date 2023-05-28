@@ -2,6 +2,7 @@
 
 .Game {
   display: flex;
+  position: relative;
   box-sizing: border-box;
   flex-direction: column;
   flex-grow: 1;
@@ -43,6 +44,40 @@
     }
   }
 
+  .players {
+    position: absolute;
+    z-index: 100;
+    top: 65px;
+    right: 15px;
+    width: 200px;
+    margin: 0;
+    padding: 5px 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background: rgba(255 255 255 / 0.9);
+    color: #333;
+
+    li {
+      display: flex;
+      margin: 5px 0;
+      list-style: none;
+
+      .rank {
+        width: 20px;
+        margin-right: 5px;
+        text-align: right;
+      }
+
+      .name {
+        flex-grow: 1;
+      }
+
+      strong {
+        float: right;
+      }
+    }
+  }
+
   .grid-container {
     display: flex;
     flex-grow: 1;
@@ -58,5 +93,11 @@
     justify-content: center;
     background: #333;
     color: white;
+
+    p {
+      span {
+        margin: 0 10px;
+      }
+    }
   }
 }
