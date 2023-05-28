@@ -230,14 +230,19 @@ const explosionImg = new Image();
 explosionImg.src = explosionImgUrl;
 
 const addExplosion = (explosion: Explosion) => {
-  items.add(new Konva.Image({
+  const explosionObj = new Konva.Image({
     id: explosion.id,
     image: explosionImg,
     width: cellSize * 0.9,
     height: cellSize * 0.9,
     x: cellPos(explosion.x) - cellSize * 0.45,
     y: cellPos(explosion.y) - cellSize * 0.45,
-  }));
+  });
+  items.add(explosionObj);
+  explosionObj.to({
+    opacity: 0,
+    duration: 1,
+  });
 };
 
 
