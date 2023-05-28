@@ -298,7 +298,7 @@ const createExplosion = (room: SokoRoom, cell: Cell) => {
 // Periodic tasks
 
 const bombChance = 0.25;
-const coinChance = 0.25;
+const coinChance = 0.5;
 const laserChance = 0.1;
 
 const setupIntervals = (room: SokoRoom) => {
@@ -372,11 +372,7 @@ class MovePlayerCmd extends Command<SokoRoom> {
     let immovable: Item | undefined;
     let pushable: Item | undefined;
     let pickup: Item | undefined;
-    let beam: Beam | undefined;
     cell.items.forEach(item => {
-      if (item instanceof Beam) {
-        beam = item;
-      }
       if (item.pushable) {
         pushable = item;
       }
@@ -411,18 +407,22 @@ class MovePlayerCmd extends Command<SokoRoom> {
       if (solidItem) return;
 
       moveItem(this.state, pushable, pux, puy);
+
+      recalculateBeams(this.room);
     }
 
     moveItem(this.state, player, plx, ply);
 
     player.pickupItem = pickup;
 
-    if (beam) {
-      // Kill player.
-      this.state.players.delete(player.id);
-      cell.items.delete(player);
-      createExplosion(this.room, cell);
-    }
+    cell.items.forEach(item => {
+      if (item instanceof Beam) {
+        // Kill player.
+        this.state.players.delete(player.id);
+        cell.items.delete(player);
+        createExplosion(this.room, cell);
+      }
+    });
   }
 }
 
@@ -437,28 +437,18 @@ class PickupCmd extends Command<SokoRoom> {
 
     // Pick up item, if any.
     if (player.pickupItem) {
+      cell?.items.delete(player.pickupItem);
+
       if (player.pickupItem instanceof Bomb) {
         this.state.bombs.delete(player.pickupItem.id);
       }
       else if (player.pickupItem instanceof Laser) {
         player.pickupItem.firing = false;
-        const laserId = player.pickupItem.id;
-        // const beams: Beam[] = [];
-        // this.state.beams.forEach(beam => {
-        //   if (beam.laserId === laserId) {
-        //     beams.push(beam);
-        //   }
-        // });
-        this.state.beams.forEach(beam => {
-          if (beam.laserId === laserId) {
-            this.state.cells.get(`${beam.x},${beam.y}`)?.items.delete(beam);
-            this.state.beams.delete(beam.id);
-          }
-        });
-        // player.pickupItem.beams.clear();
+        removeBeams(this.room, player.pickupItem);
         this.state.lasers.delete(player.pickupItem.id);
+
+        recalculateBeams(this.room);
       }
-      cell?.items.delete(player.pickupItem);
       player.heldItem = player.pickupItem;
       player.pickupItem = undefined;
     }
@@ -523,6 +513,24 @@ const useBomb = (room: SokoRoom, cell: Cell, bomb: Bomb) => {
   }, bombTimer);
 };
 
+const recalculateBeams = (room: SokoRoom) => {
+  room.state.lasers.forEach(laser => {
+    if (laser.firing) {
+      removeBeams(room, laser);
+      fireBeams(room, laser);
+    }
+  });
+};
+
+const removeBeams = (room: SokoRoom, laser: Laser) => {
+  room.state.beams.forEach(beam => {
+    if (beam.laserId === laser.id) {
+      room.state.cells.get(`${beam.x},${beam.y}`)?.items.delete(beam);
+      room.state.beams.delete(beam.id);
+    }
+  });
+};
+
 const fireBeams = (room: SokoRoom, laser: Laser) => {
   let { x, y } = laser;
   const dir = laser.rot || 0; // TODO: make mutable if beam can be redirected.
@@ -548,6 +556,7 @@ const fireBeams = (room: SokoRoom, laser: Laser) => {
         solidItem = item;
       }
     });
+    if (solidItem) console.log(solidItem);
     if (solidItem) break;
 
     const beam = new Beam({
