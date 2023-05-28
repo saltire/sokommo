@@ -13,6 +13,7 @@ export type GameInfo = {
   players: (Pick<Player, 'id' | 'name' | 'color' | 'coins'> & {
     rank: number,
   })[],
+  pickupItem?: Item,
 };
 
 let stage: Konva.Stage;
@@ -334,8 +335,14 @@ export const setupSokoClient = (
 
     if (player.id === room.sessionId) {
       player.listen('coins', () => updatePlayerList());
-      player.listen('x', () => updateOffset(player));
-      player.listen('y', () => updateOffset(player));
+
+      const onMove = () => {
+        updateOffset(player);
+      };
+      player.listen('x', onMove);
+      player.listen('y', onMove);
+
+      player.listen('pickupItem', pickupItem => updateInfo({ pickupItem }));
     }
     updatePlayerList();
   });

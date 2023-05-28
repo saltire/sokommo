@@ -78,6 +78,38 @@
     }
   }
 
+  .inventory, .pickup {
+    position: absolute;
+    z-index: 100;
+    right: 15px;
+    bottom: 15px;
+    padding: 15px 25px;
+    border: 5px solid #333;
+    border-radius: 10px;
+    background: white;
+
+    img {
+      width: 64px;
+      height: 64px;
+    }
+
+    p {
+      margin: 10px 0 0;
+
+      &.name {
+        font-size: 125%;
+      }
+    }
+  }
+
+  .inventory {
+    left: 15px;
+  }
+
+  .pickup {
+    right: 15px;
+  }
+
   .grid-container {
     display: flex;
     flex-grow: 1;

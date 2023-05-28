@@ -12,6 +12,7 @@ export class Item extends Schema {
   @type('number') y!: number;
   @type('boolean') pushable: boolean | undefined;
   @type('boolean') solid: boolean | undefined;
+  @type('string') pickupName: string | undefined;
 }
 
 export class Player extends Item {
@@ -20,6 +21,7 @@ export class Player extends Item {
   @type('string') imageUrl!: string;
   @type('number') rot!: number;
   @type('number') coins = 0;
+  @type(Item) pickupItem: Item | undefined;
 }
 export type PlayerData = {
   name: string,
@@ -134,6 +136,17 @@ const initState = () => {
     }
   }
 
+  const bombCount = 40;
+  for (let i = 0; i < bombCount; i += 1) {
+    const bomb = new Bomb({
+      id: uuid(),
+      ...getFreeSpace(state),
+      pickupName: 'Bomb',
+    });
+    state.bombs.set(bomb.id, bomb);
+    state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
+  }
+
   const coinCount = 40;
   for (let i = 0; i < coinCount; i += 1) {
     const coin = new Coin({
@@ -154,16 +167,6 @@ const initState = () => {
     });
     state.crates.set(crate.id, crate);
     state.cells.get(`${crate.x},${crate.y}`)?.items.add(crate);
-  }
-
-  const bombCount = 40;
-  for (let i = 0; i < bombCount; i += 1) {
-    const bomb = new Bomb({
-      id: uuid(),
-      ...getFreeSpace(state),
-    });
-    state.bombs.set(bomb.id, bomb);
-    state.cells.get(`${bomb.x},${bomb.y}`)?.items.add(bomb);
   }
 
   return state;
@@ -221,6 +224,7 @@ class MovePlayerCmd extends Command<SokoRoom> {
       // Check for a solid or pushable item.
       let immovable: Item | undefined;
       let pushable: Item | undefined;
+      let pickup: Item | undefined;
       this.state.cells.get(`${plx},${ply}`)?.items.forEach(item => {
         if (item.pushable) {
           pushable = item;
@@ -233,6 +237,9 @@ class MovePlayerCmd extends Command<SokoRoom> {
         }
         else if (item.solid) {
           immovable = item;
+        }
+        else if (item.pickupName) {
+          pickup = item;
         }
       });
       if (immovable) return;
@@ -255,6 +262,8 @@ class MovePlayerCmd extends Command<SokoRoom> {
       }
 
       moveItem(this.state, player, plx, ply);
+
+      player.pickupItem = pickup;
     }
   }
 }

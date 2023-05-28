@@ -5,6 +5,12 @@ import './Game.scss';
 import { setupSokoClient, handleInput, GameInfo } from './lib/sokoClient';
 import { SokoRoomState } from '../server/rooms/SokoRoom';
 
+import bombImgUrl from './static/bomb.png';
+
+
+const pickupImgUrls: { [index: string]: string } = {
+  Bomb: bombImgUrl,
+};
 
 type GameProps = {
   room: Room<SokoRoomState>,
@@ -55,6 +61,14 @@ export default function Game({ room, onQuit }: GameProps) {
             </li>
           ))}
         </ul>
+      )}
+
+      {info.pickupItem?.pickupName && (
+        <div className='pickup'>
+          <img src={pickupImgUrls[info.pickupItem.pickupName]} alt={info.pickupItem.pickupName} />
+          <p className='name'><strong>{info.pickupItem.pickupName}</strong></p>
+          {/* <p>Pickup: <strong>E</strong></p> */}
+        </div>
       )}
 
       <div className='grid-container'>
