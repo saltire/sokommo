@@ -1,12 +1,15 @@
 import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
-import { SokoRoomState, Bomb, Coin, Crate, Item, Player } from '../../server/rooms/SokoRoom';
+import {
+  SokoRoomState, Bomb, Coin, Crate, Explosion, Item, Player,
+} from '../../server/rooms/SokoRoom';
 
 import bombImgUrl from '../static/bomb.png';
 import bombHotImgUrl from '../static/bomb-hot.png';
 import coinImgUrl from '../static/coin.png';
 import crateImgUrl from '../static/crate.png';
+import explosionImgUrl from '../static/explosion.png';
 
 
 export type GameInfo = {
@@ -117,18 +120,16 @@ const addPlayer = (player: Player) => {
 
 const updatePlayer = (player: Player) => {
   const playerGroup = items.findOne<Konva.Group>(`#${player.id}`);
-  if (playerGroup) {
-    playerGroup.to({
-      x: cellPos(player.x),
-      y: cellPos(player.y),
-      duration: moveDuration,
-    });
+  playerGroup?.to({
+    x: cellPos(player.x),
+    y: cellPos(player.y),
+    duration: moveDuration,
+  });
 
-    playerGroup.findOne('.rot')?.to({
-      rotation: player.rot * 90,
-      duration: moveDuration,
-    });
-  }
+  playerGroup?.findOne('.rot')?.to({
+    rotation: player.rot * 90,
+    duration: moveDuration,
+  });
 };
 
 
@@ -140,15 +141,19 @@ const bombHotImg = new Image();
 bombHotImg.src = bombHotImgUrl;
 
 const addBomb = (bomb: Bomb) => {
-  const bombObj = new Konva.Image({
+  bombs.add(new Konva.Image({
     id: bomb.id,
-    image: bombImg,
+    image: bomb.hot ? bombHotImg : bombImg,
     width: cellSize * 0.8,
     height: cellSize * 0.8,
     x: cellPos(bomb.x) - cellSize * 0.4,
     y: cellPos(bomb.y) - cellSize * 0.4,
-  });
-  bombs.add(bombObj);
+  }));
+};
+
+const updateBomb = (bomb: Bomb) => {
+  const bombObj = items.findOne<Konva.Image>(`#${bomb.id}`);
+  bombObj?.image(bomb.hot ? bombHotImg : bombImg);
 };
 
 
@@ -158,15 +163,14 @@ const coinImg = new Image();
 coinImg.src = coinImgUrl;
 
 const addCoin = (coin: Coin) => {
-  const coinObj = new Konva.Image({
+  items.add(new Konva.Image({
     id: coin.id,
     image: coinImg,
     width: cellSize * 0.8,
     height: cellSize * 0.8,
     x: cellPos(coin.x) - cellSize * 0.4,
     y: cellPos(coin.y) - cellSize * 0.4,
-  });
-  items.add(coinObj);
+  }));
 };
 
 
@@ -176,26 +180,40 @@ const crateImg = new Image();
 crateImg.src = crateImgUrl;
 
 const addCrate = (crate: Crate) => {
-  const crateObj = new Konva.Image({
+  items.add(new Konva.Image({
     id: crate.id,
     image: crateImg,
     width: cellSize * 0.9,
     height: cellSize * 0.9,
     x: cellPos(crate.x) - cellSize * 0.45,
     y: cellPos(crate.y) - cellSize * 0.45,
-  });
-  items.add(crateObj);
+  }));
 };
 
 const updateCrate = (crate: Crate) => {
   const crateObj = items.findOne<Konva.Rect>(`#${crate.id}`);
-  if (crateObj) {
-    crateObj.to({
-      x: cellPos(crate.x) - cellSize * 0.45,
-      y: cellPos(crate.y) - cellSize * 0.45,
-      duration: moveDuration,
-    });
-  }
+  crateObj?.to({
+    x: cellPos(crate.x) - cellSize * 0.45,
+    y: cellPos(crate.y) - cellSize * 0.45,
+    duration: moveDuration,
+  });
+};
+
+
+// Explosion event handlers
+
+const explosionImg = new Image();
+explosionImg.src = explosionImgUrl;
+
+const addExplosion = (explosion: Explosion) => {
+  items.add(new Konva.Image({
+    id: explosion.id,
+    image: explosionImg,
+    width: cellSize * 0.9,
+    height: cellSize * 0.9,
+    x: cellPos(explosion.x) - cellSize * 0.45,
+    y: cellPos(explosion.y) - cellSize * 0.45,
+  }));
 };
 
 
@@ -353,7 +371,10 @@ export const setupSokoClient = (
     updatePlayerList();
   });
 
-  room.state.bombs.onAdd(bomb => addBomb(bomb));
+  room.state.bombs.onAdd(bomb => {
+    addBomb(bomb);
+    bomb.listen('hot', () => updateBomb(bomb));
+  });
   room.state.bombs.onRemove(bomb => removeItem(bomb));
 
   room.state.coins.onAdd(coin => addCoin(coin));
@@ -365,6 +386,10 @@ export const setupSokoClient = (
     addCrate(crate);
     crate.onChange(() => updateCrate(crate));
   });
+  room.state.crates.onRemove(crate => removeItem(crate));
+
+  room.state.explosions.onAdd(explosion => addExplosion(explosion));
+  room.state.explosions.onRemove(explosion => removeItem(explosion));
 
   // Set up resize observer
 
@@ -403,9 +428,11 @@ export const handleInput = (room: Room<SokoRoomState>) => {
       room.send('move', dir);
       interval = setInterval(() => room.send('move', dir), moveCooldown);
     }
-
-    if (e.key === 'e') {
+    else if (e.key === 'e') {
       room.send('pickup');
+    }
+    else if (e.key === 'f') {
+      room.send('useItem');
     }
   };
 

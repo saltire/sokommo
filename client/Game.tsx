@@ -67,6 +67,7 @@ export default function Game({ room, onQuit }: GameProps) {
         <div className='inventory'>
           <img src={pickupImgUrls[info.heldItem.itemName]} alt={info.heldItem.itemName} />
           <p className='name'><strong>{info.heldItem.itemName}</strong></p>
+          <p>Use: <strong>F</strong></p>
           <p>{info.pickupItem ? 'Swap' : 'Drop'}: <strong>E</strong></p>
         </div>
       )}
@@ -75,6 +76,7 @@ export default function Game({ room, onQuit }: GameProps) {
         <div className='pickup'>
           <img src={pickupImgUrls[info.pickupItem.itemName]} alt={info.pickupItem.itemName} />
           <p className='name'><strong>{info.pickupItem.itemName}</strong></p>
+          <p> </p>
           <p>{info.heldItem ? 'Swap' : 'Pick up'}: <strong>E</strong></p>
         </div>
       )}

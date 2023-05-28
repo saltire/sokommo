@@ -31,12 +31,16 @@ export type PlayerData = {
 };
 
 export class Bomb extends Item {
+  @type('boolean') hot: boolean | undefined;
 }
 
 export class Coin extends Item {
 }
 
 export class Crate extends Item {
+}
+
+export class Explosion extends Item {
 }
 
 export class Cell extends Schema {
@@ -51,6 +55,7 @@ export class SokoRoomState extends Schema {
   @type({ map: Bomb }) bombs!: MapSchema<Bomb>;
   @type({ map: Coin }) coins!: MapSchema<Coin>;
   @type({ map: Crate }) crates!: MapSchema<Crate>;
+  @type({ map: Explosion }) explosions!: MapSchema<Explosion>;
 }
 
 
@@ -69,6 +74,10 @@ export default class SokoRoom extends Room<SokoRoomState> {
 
     this.onMessage('pickup', client => {
       this.dispatcher.dispatch(new PickupCmd(), client.sessionId);
+    });
+
+    this.onMessage('useItem', client => {
+      this.dispatcher.dispatch(new UseItemCmd(), client.sessionId);
     });
   }
 
@@ -131,6 +140,7 @@ const initState = () => {
     bombs: new MapSchema<Bomb>(),
     coins: new MapSchema<Coin>(),
     crates: new MapSchema<Crate>(),
+    explosions: new MapSchema<Explosion>(),
   });
 
   for (let y = 0; y < state.width; y += 1) {
@@ -224,21 +234,22 @@ class MovePlayerCmd extends Command<SokoRoom> {
     const dr = (dir - (player.rot % 4) + 4) % 4;
     player.rot += (dr === 3 ? -1 : dr);
 
-    const plx = Math.max(0, Math.min(this.state.width - 1, player.x + dx));
-    const ply = Math.max(0, Math.min(this.state.height - 1, player.y + dy));
-    if (plx === player.x && ply === player.y) return;
+    const plx = player.x + dx;
+    const ply = player.y + dy;
+    const cell = this.state.cells.get(`${plx},${ply}`);
+    if (!cell) return;
 
     // Check for a solid or pushable item.
     let immovable: Item | undefined;
     let pushable: Item | undefined;
     let pickup: Item | undefined;
-    this.state.cells.get(`${plx},${ply}`)?.items.forEach(item => {
+    cell.items.forEach(item => {
       if (item.pushable) {
         pushable = item;
       }
       // Pick up any coins.
       else if (item instanceof Coin) {
-        this.state.cells.get(`${item.x},${item.y}`)?.items.delete(item);
+        cell.items.delete(item);
         this.state.coins.delete(item.id);
         player.coins += 1;
       }
@@ -252,13 +263,14 @@ class MovePlayerCmd extends Command<SokoRoom> {
     if (immovable) return;
 
     if (pushable) {
-      const pux = Math.max(0, Math.min(this.state.width - 1, pushable.x + dx));
-      const puy = Math.max(0, Math.min(this.state.height - 1, pushable.y + dy));
-      if (pux === pushable.x && puy === pushable.y) return;
+      const pux = pushable.x + dx;
+      const puy = pushable.y + dy;
+      const pCell = this.state.cells.get(`${pux},${puy}`);
+      if (!pCell) return;
 
       // Check for a solid item on the other side.
       let solidItem: Item | undefined;
-      this.state.cells.get(`${pux},${puy}`)?.items.forEach(item => {
+      pCell.items.forEach(item => {
         if (item.solid) {
           solidItem = item;
         }
@@ -303,5 +315,74 @@ class PickupCmd extends Command<SokoRoom> {
       cell?.items.add(alreadyHeldItem);
       player.pickupItem = alreadyHeldItem;
     }
+  }
+}
+
+class UseItemCmd extends Command<SokoRoom> {
+  bombTimer = 2000;
+  explosionTimer = 1000;
+
+  execute(sessionId: string) {
+    const player = this.state.players.get(sessionId);
+    if (!player?.heldItem) return;
+
+    const { x, y } = player;
+    const cell = this.state.cells.get(`${x},${y}`);
+    if (!cell) return;
+
+    if (player.heldItem instanceof Bomb) {
+      const bomb = player.heldItem;
+      bomb.hot = true;
+      bomb.itemName = undefined; // No longer able to pick it up.
+      // TODO: allow items to appear in the pickup window without being actually grabbable,
+      // and prevent dropping more items in the same cell.
+      this.state.bombs.set(bomb.id, bomb);
+
+      this.clock.setTimeout(() => {
+        this.state.bombs.delete(bomb.id);
+        cell?.items.delete(bomb);
+
+        for (let ex = x - 1; ex <= x + 1; ex += 1) {
+          for (let ey = y - 1; ey <= y + 1; ey += 1) {
+            const eCell = this.state.cells.get(`${ex},${ey}`);
+            if (eCell) {
+              eCell.items.forEach(item => {
+                if (item instanceof Bomb) {
+                  this.state.bombs.delete(item.id);
+                }
+                else if (item instanceof Coin) {
+                  this.state.coins.delete(item.id);
+                }
+                else if (item instanceof Crate) {
+                  this.state.crates.delete(item.id);
+                }
+
+                // TODO: skip destroying players until we have a game over mechanism.
+                if (!(item instanceof Player)) {
+                  eCell.items.delete(item);
+                }
+              });
+
+              const explosion = new Explosion({
+                id: uuid(),
+                x: ex,
+                y: ey,
+              });
+              this.state.explosions.set(explosion.id, explosion);
+              eCell.items.add(explosion);
+
+              this.clock.setTimeout(() => {
+                this.state.explosions.delete(explosion.id);
+                eCell.items.delete(explosion);
+              }, this.explosionTimer);
+            }
+          }
+        }
+      }, this.bombTimer);
+    }
+    player.heldItem.x = player.x;
+    player.heldItem.y = player.y;
+    cell?.items.add(player.heldItem);
+    player.heldItem = undefined;
   }
 }
