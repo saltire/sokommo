@@ -33,6 +33,7 @@ export type PlayerData = {
 
 export class Beam extends Item {
   @type('string') laserId!: string;
+  @type('boolean') bent: boolean | undefined;
 }
 
 export class Bomb extends Item {
@@ -51,6 +52,9 @@ export class Explosion extends Item {
 export class Laser extends Item {
   @type('boolean') firing: boolean | undefined;
   // @type({ array: Beam }) beams!: ArraySchema<Beam>;
+}
+
+export class Mirror extends Item {
 }
 
 export class Wall extends Item {
@@ -73,6 +77,7 @@ export class SokoRoomState extends Schema {
   @type({ map: Crate }) crates!: MapSchema<Crate>;
   @type({ map: Explosion }) explosions!: MapSchema<Explosion>;
   @type({ map: Laser }) lasers!: MapSchema<Laser>;
+  @type({ map: Mirror }) mirrors!: MapSchema<Mirror>;
   @type({ map: Wall }) walls!: MapSchema<Wall>;
 }
 
@@ -155,10 +160,11 @@ const moveItem = (state: SokoRoomState, item: Item, x: number, y: number) => {
 
 // Initial state
 
-const bombCount = 30;
+const bombCount = 20;
 const coinCount = 40;
 const crateCount = 40;
 const laserCount = 5;
+const mirrorCount = 12;
 
 const initState = () => {
   const state = new SokoRoomState({
@@ -172,6 +178,7 @@ const initState = () => {
     crates: new MapSchema<Crate>(),
     explosions: new MapSchema<Explosion>(),
     lasers: new MapSchema<Laser>(),
+    mirrors: new MapSchema<Mirror>(),
     walls: new MapSchema<Wall>(),
   });
 
@@ -228,6 +235,10 @@ const initState = () => {
     createLaser(state);
   }
 
+  for (let i = 0; i < mirrorCount; i += 1) {
+    createMirror(state, i);
+  }
+
   return state;
 };
 
@@ -277,6 +288,18 @@ const createLaser = (state: SokoRoomState) => {
   state.cells.get(`${laser.x},${laser.y}`)?.items.add(laser);
 };
 
+const createMirror = (state: SokoRoomState, i: number) => {
+  const mirror = new Mirror({
+    id: uuid(),
+    ...getFreeSpace(state),
+    pushable: true,
+    solid: true,
+    rot: i % 4,
+  });
+  state.mirrors.set(mirror.id, mirror);
+  state.cells.get(`${mirror.x},${mirror.y}`)?.items.add(mirror);
+};
+
 const createExplosion = (room: SokoRoom, cell: Cell) => {
   const explosionTimer = 1000;
 
@@ -298,7 +321,7 @@ const createExplosion = (room: SokoRoom, cell: Cell) => {
 // Periodic tasks
 
 const bombChance = 0.25;
-const coinChance = 0.5;
+const coinChance = 0.75;
 const laserChance = 0.1;
 
 const setupIntervals = (room: SokoRoom) => {
@@ -536,46 +559,72 @@ const removeBeams = (room: SokoRoom, laser: Laser) => {
 
 const fireBeams = (room: SokoRoom, laser: Laser) => {
   let { x, y } = laser;
-  const dir = laser.rot || 0; // TODO: make mutable if beam can be redirected.
-  const [dx, dy] = dirs[dir] || [0, 0];
+  let dir = laser.rot || 0; // TODO: make mutable if beam can be redirected.
   let count = 0;
   do {
+    const [dx, dy] = dirs[dir] || [0, 0];
     x += dx;
     y += dy;
     const cell = room.state.cells.get(`${x},${y}`);
     if (!cell) break;
 
+    let nextDir = dir;
+    const players: Player[] = [];
     let solidItem: Item | undefined;
-    cell.items.forEach(item => {
+    // Use a for loop since we're already in a do/while loop.
+    for (let i = 0; i < cell.items.size; i += 1) {
+      const item = cell.items.at(i);
+
       if (item instanceof Bomb) {
         useBomb(room, cell, item);
       }
       else if (item instanceof Player) {
-        room.state.players.delete(item.id);
-        cell.items.delete(item);
+        players.push(item); // Delete players after the loop is finished.
         createExplosion(room, cell);
       }
-      else if (item.solid) {
+      else if (item instanceof Mirror) {
+        const dirDiff = ((item.rot || 0) - dir + 4) % 4;
+        if (dirDiff === 1) {
+          // Bend right
+          nextDir = (dir + 1) % 4;
+        }
+        else if (dirDiff === 2) {
+          // Bend left
+          nextDir = (dir + 3) % 4;
+        }
+        else {
+          solidItem = item;
+        }
+      }
+      else if (item?.solid) {
         solidItem = item;
       }
+    }
+    players.forEach(player => {
+      room.state.players.delete(player.id);
+      cell.items.delete(player);
     });
-    if (solidItem) console.log(solidItem);
+
     if (solidItem) break;
+
+    const dirDiff = (nextDir - dir + 4) % 4;
 
     const beam = new Beam({
       id: uuid(),
       laserId: laser.id,
       x,
       y,
-      rot: dir,
+      rot: dir + (dirDiff === 3 ? 1 : 0),
+      bent: nextDir !== dir,
     });
+    dir = nextDir;
     // laser.beams.push(beam);
     room.state.beams.set(beam.id, beam);
     cell.items.add(beam);
 
     count += 1;
   }
-  while (count < 100);
+  while (count < 1000);
 };
 
 const useLaser = (room: SokoRoom, player: Player, laser: Laser) => {

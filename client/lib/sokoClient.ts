@@ -2,15 +2,20 @@ import { Room } from 'colyseus.js';
 import Konva from 'konva';
 
 import {
-  SokoRoomState, Beam, Bomb, Coin, Crate, Explosion, Item, Laser, Player, Wall,
+  SokoRoomState, Beam, Bomb, Coin, Crate, Explosion, Item, Laser, Mirror, Player, Wall,
 } from '../../server/rooms/SokoRoom';
 
 import beamImgUrl from '../static/beam-straight.png';
+import beamBentImgUrl from '../static/beam-corner.png';
 import bombSpriteUrl from '../static/bomb-sprite.png';
 import coinImgUrl from '../static/coin.png';
 import crateImgUrl from '../static/crate.png';
 import explosionImgUrl from '../static/explosion.png';
 import laserImgUrl from '../static/laser.png';
+import mirrorImgNEUrl from '../static/mirror-ne.png';
+import mirrorImgSEUrl from '../static/mirror-se.png';
+import mirrorImgSWUrl from '../static/mirror-sw.png';
+import mirrorImgNWUrl from '../static/mirror-nw.png';
 import wallImgUrl from '../static/wall.png';
 
 
@@ -32,6 +37,7 @@ let items: Konva.Layer;
 let beams: Konva.Group;
 let coins: Konva.Group;
 let crates: Konva.Group;
+let mirrors: Konva.Group;
 let pickups: Konva.Group;
 let players: Konva.Group;
 let walls: Konva.Group;
@@ -255,6 +261,8 @@ const laserImg = new Image();
 laserImg.src = laserImgUrl;
 const beamImg = new Image();
 beamImg.src = beamImgUrl;
+const beamBentImg = new Image();
+beamBentImg.src = beamBentImgUrl;
 
 const addLaser = (laser: Laser) => {
   const laserGroup = new Konva.Group({
@@ -284,7 +292,7 @@ const addBeam = (beam: Beam) => {
   });
 
   beamGroup.add(new Konva.Image({
-    image: beamImg,
+    image: beam.bent ? beamBentImg : beamImg,
     width: cellSize,
     height: cellSize,
     x: -cellSize * 0.5,
@@ -292,6 +300,38 @@ const addBeam = (beam: Beam) => {
   }));
 
   beams.add(beamGroup);
+};
+
+
+// Mirror event handlers
+
+const mirrorImgNE = new Image();
+mirrorImgNE.src = mirrorImgNEUrl;
+const mirrorImgSE = new Image();
+mirrorImgSE.src = mirrorImgSEUrl;
+const mirrorImgSW = new Image();
+mirrorImgSW.src = mirrorImgSWUrl;
+const mirrorImgNW = new Image();
+mirrorImgNW.src = mirrorImgNWUrl;
+
+const addMirror = (mirror: Mirror) => {
+  mirrors.add(new Konva.Image({
+    id: mirror.id,
+    image: [mirrorImgNE, mirrorImgSE, mirrorImgSW, mirrorImgNW][mirror.rot || 0],
+    width: cellSize * 0.9,
+    height: cellSize * 0.9,
+    x: cellPos(mirror.x) - cellSize * 0.45,
+    y: cellPos(mirror.y) - cellSize * 0.45,
+  }));
+};
+
+const updateMirror = (mirror: Mirror) => {
+  const mirrorObj = items.findOne<Konva.Rect>(`#${mirror.id}`);
+  mirrorObj?.to({
+    x: cellPos(mirror.x) - cellSize * 0.45,
+    y: cellPos(mirror.y) - cellSize * 0.45,
+    duration: moveDuration,
+  });
 };
 
 
@@ -344,6 +384,8 @@ const createGroups = () => {
   items.add(pickups);
   crates = new Konva.Group();
   items.add(crates);
+  mirrors = new Konva.Group();
+  items.add(mirrors);
   players = new Konva.Group();
   items.add(players);
   beams = new Konva.Group();
@@ -362,6 +404,7 @@ const drawItems = (state: SokoRoomState) => {
     // laser.beams.forEach(addBeam);
   });
   state.beams.forEach(addBeam);
+  state.mirrors.forEach(addMirror);
   state.players.forEach(addPlayer);
   state.walls.forEach(addWall);
 };
@@ -491,9 +534,9 @@ export const setupSokoClient = (
     addBomb(bomb);
     bomb.listen('hot', () => updateBomb(bomb));
   });
-  room.state.bombs.onRemove(bomb => removeItem(bomb));
+  room.state.bombs.onRemove(removeItem);
 
-  room.state.coins.onAdd(coin => addCoin(coin));
+  room.state.coins.onAdd(addCoin);
   room.state.coins.onRemove(coin => {
     setTimeout(() => removeItem(coin), moveDuration * 1000);
   });
@@ -502,21 +545,26 @@ export const setupSokoClient = (
     addCrate(crate);
     crate.onChange(() => updateCrate(crate));
   });
-  room.state.crates.onRemove(crate => removeItem(crate));
+  room.state.crates.onRemove(removeItem);
 
-  room.state.explosions.onAdd(explosion => addExplosion(explosion));
-  room.state.explosions.onRemove(explosion => removeItem(explosion));
+  room.state.explosions.onAdd(addExplosion);
+  room.state.explosions.onRemove(removeItem);
 
   room.state.lasers.onAdd(laser => {
     addLaser(laser);
-    // laser.beams.onAdd(beam => addBeam(beam));
-    // laser.beams.onRemove(beam => removeItem(beam));
+    // laser.beams.onAdd(addBeam);
+    // laser.beams.onRemove(removeItem);
   });
-  room.state.lasers.onRemove(laser => removeItem(laser));
-  room.state.beams.onAdd(beam => addBeam(beam));
-  room.state.beams.onRemove(beam => removeItem(beam));
+  room.state.lasers.onRemove(removeItem);
+  room.state.beams.onAdd(addBeam);
+  room.state.beams.onRemove(removeItem);
 
-  room.state.walls.onAdd(wall => addWall(wall));
+  room.state.mirrors.onAdd(mirror => {
+    addMirror(mirror);
+    mirror.onChange(() => updateMirror(mirror));
+  });
+
+  room.state.walls.onAdd(addWall);
 
   // Set up resize observer
 
